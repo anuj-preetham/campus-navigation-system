@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMI Campus Navigator | AMI University</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
+<style>
+:root{
+  --navy:#0B1D3A;--navy-light:#132D5E;--gold:#D4A853;--gold-light:#F5E6C8;
+  --primary:#2563EB;--primary-dark:#1D4ED8;--primary-light:#DBEAFE;
+  --accent:#0D9488;--accent-light:#CCFBF1;
+  --bg:#F0F4F8;--surface:#FFFFFF;--text:#0F172A;--text-muted:#5B6472;
+  --border:#E2E8F0;--radius:16px;--radius-sm:12px;
+  --shadow-sm:0 2px 8px rgba(11,29,58,0.06);
+  --shadow-md:0 8px 30px rgba(11,29,58,0.10);
+  --shadow-lg:0 20px 50px rgba(11,29,58,0.15);
+  --glass:rgba(255,255,255,0.85);
+}
+[data-theme="dark"]{
+  --bg:#070E1A;--surface:#0F1A2E;--text:#EAF0FB;--text-muted:#93A0B4;
+  --border:#1E3050;--primary-light:#152449;--accent-light:#0E2E2C;--glass:rgba(15,26,46,0.9);
+  --shadow-sm:0 2px 8px rgba(0,0,0,0.3);--shadow-md:0 8px 30px rgba(0,0,0,0.4);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);transition:background .3s,color .3s;overflow-x:hidden}
+h1,h2,h3,h4,.brand{font-family:'Poppins',sans-serif}
+a{text-decoration:none;color:inherit}
+ul{list-style:none}
+section{scroll-margin-top:76px}
+.container{max-width:1240px;margin:0 auto;padding:0 24px}
+
+/* Loader */
+#loader{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,var(--navy),var(--primary));display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;transition:opacity .5s,visibility .5s}
+#loader.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.loader-shield{width:72px;height:72px;background:var(--gold);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--navy);animation:pulse-logo 1.2s ease infinite}
+.loader-text{color:#fff;font-family:'Poppins',sans-serif;font-weight:600;font-size:1.1rem}
+.loader-bar{width:200px;height:4px;background:rgba(255,255,255,0.2);border-radius:4px;overflow:hidden}
+.loader-bar span{display:block;height:100%;background:var(--gold);animation:load-bar 1.5s ease infinite}
+@keyframes pulse-logo{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes load-bar{0%{width:0;margin-left:0}50%{width:70%;margin-left:15%}100%{width:0;margin-left:100%}}
+
+/* Navbar */
+.navbar{position:sticky;top:0;z-index:1000;background:var(--navy);border-bottom:1px solid rgba(255,255,255,0.08)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;max-width:1240px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:1.15rem;color:#fff}
+.brand-shield{width:42px;height:42px;background:linear-gradient(135deg,var(--gold),#E8C468);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:1.2rem;box-shadow:0 4px 12px rgba(212,168,83,0.4)}
+.brand-text small{display:block;font-size:.65rem;font-weight:500;color:var(--gold);letter-spacing:1px;text-transform:uppercase}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{padding:8px 14px;border-radius:8px;font-weight:500;font-size:.88rem;color:rgba(255,255,255,0.75);transition:all .2s}
+.nav-links a:hover,.nav-links a.active{background:rgba(255,255,255,0.1);color:#fff}
+.nav-actions{display:flex;align-items:center;gap:12px}
+.weather-widget{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.08);padding:6px 14px;border-radius:999px;color:#fff;font-size:.8rem}
+.weather-widget i{color:var(--gold)}
+.theme-toggle,.nav-search-btn{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.95rem;transition:all .2s}
+.theme-toggle:hover,.nav-search-btn:hover{background:rgba(255,255,255,0.15);transform:scale(1.05)}
+.hamburger{display:none;background:none;border:none;font-size:1.3rem;color:#fff;cursor:pointer}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;justify-content:center;padding:12px 24px;border-radius:var(--radius-sm);font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:all .25s;font-family:inherit}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:0 4px 14px rgba(37,99,235,0.35)}
+.btn-primary:hover{background:var(--primary-dark);transform:translateY(-2px);box-shadow:0 6px 20px rgba(37,99,235,0.45)}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#E8C468);color:var(--navy)}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(212,168,83,0.4)}
+.btn-sm{padding:8px 16px;font-size:.82rem;border-radius:9px}
+.btn-block{width:100%}
+
+/* Hero */
+.hero{position:relative;min-height:580px;display:flex;align-items:center;padding:80px 24px 100px;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1562774053-701939374585?w=1920&q=80') center/cover no-repeat}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(11,29,58,0.88) 0%,rgba(11,29,58,0.65) 50%,rgba(37,99,235,0.4) 100%)}
+.hero-gradient{position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(212,168,83,0.15),transparent 60%);animation:hero-glow 6s ease infinite alternate}
+@keyframes hero-glow{0%{opacity:.5}100%{opacity:1}}
+.hero .container{position:relative;z-index:2;text-align:center}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);color:var(--gold);padding:8px 18px;border-radius:999px;font-size:.78rem;font-weight:600;margin-bottom:24px;border:1px solid rgba(212,168,83,0.3)}
+.hero h1{font-size:clamp(2.2rem,5.5vw,3.6rem);font-weight:800;line-height:1.12;color:#fff;max-width:900px;margin:0 auto 18px}
+.hero h1 .gold{color:var(--gold)}
+.hero p{max-width:620px;margin:0 auto 36px;color:rgba(255,255,255,0.85);font-size:1.08rem;line-height:1.6}
+.search-wrap{max-width:680px;margin:0 auto 28px;position:relative}
+.search-box{display:flex;align-items:center;background:#fff;border-radius:var(--radius);padding:6px 6px 6px 20px;box-shadow:var(--shadow-lg)}
+.search-box input{flex:1;border:none;outline:none;font-size:1rem;padding:14px 0;color:var(--text);font-family:inherit;background:transparent}
+.search-box .btn-search{padding:14px 28px;border-radius:10px}
+.search-results{position:absolute;top:calc(100% + 10px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-lg);max-height:340px;overflow-y:auto;z-index:50;text-align:left;display:none}
+.search-results.show{display:block}
+.search-result-item{padding:14px 20px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background .15s}
+.search-result-item:hover{background:var(--primary-light)}
+.sri-name{font-weight:600;font-size:.92rem}
+.sri-building{font-size:.78rem;color:var(--text-muted)}
+.popular-tags{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:50px}
+.popular-tags span{color:rgba(255,255,255,0.6);font-size:.82rem;margin-right:4px}
+.tag-pill{padding:6px 14px;border-radius:999px;background:rgba(255,255,255,0.12);color:#fff;font-size:.8rem;font-weight:500;cursor:pointer;border:1px solid rgba(255,255,255,0.15);transition:all .2s}
+.tag-pill:hover{background:rgba(212,168,83,0.3);border-color:var(--gold);color:var(--gold)}
+
+/* Quick Cards */
+.quick-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;max-width:1100px;margin:0 auto}
+.quick-card{background:var(--glass);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.2);border-radius:var(--radius);padding:26px 18px;text-align:center;cursor:pointer;transition:all .3s}
+.quick-card:hover{transform:translateY(-8px);box-shadow:var(--shadow-lg);border-color:var(--gold)}
+.qc-icon{width:54px;height:54px;border-radius:14px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff}
+.quick-card h4{font-size:.95rem;color:#fff;margin-bottom:4px}
+.quick-card p{font-size:.75rem;color:rgba(255,255,255,0.65)}
+
+/* Sections */
+.section{padding:80px 0}
+.section-alt{background:var(--surface)}
+.section-navy{background:var(--navy);color:#fff}
+.sec-head{text-align:center;max-width:680px;margin:0 auto 48px}
+.eyebrow{color:var(--gold);font-weight:700;font-size:.76rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;display:block}
+.section-navy .eyebrow{color:var(--gold)}
+.sec-head h2{font-size:clamp(1.7rem,3.5vw,2.3rem);font-weight:700;margin-bottom:12px}
+.sec-head p{color:var(--text-muted);font-size:1rem;line-height:1.6}
+.section-navy .sec-head p{color:rgba(255,255,255,0.7)}
+.sec-head-row{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:36px}
+.sec-head-row .sec-head{text-align:left;margin:0}
+.view-all{color:var(--primary);font-weight:600;font-size:.88rem;display:flex;align-items:center;gap:6px;transition:gap .2s}
+.view-all:hover{gap:10px}
+
+/* Popular Places */
+.places-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+.place-card{position:relative;border-radius:var(--radius);overflow:hidden;aspect-ratio:1;cursor:pointer;box-shadow:var(--shadow-sm);transition:all .3s}
+.place-card:hover{transform:translateY(-6px) scale(1.02);box-shadow:var(--shadow-md)}
+.place-card img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+.place-card:hover img{transform:scale(1.1)}
+.place-overlay{position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(11,29,58,0.85));display:flex;align-items:flex-end;padding:14px}
+.place-overlay span{color:#fff;font-weight:600;font-size:.85rem}
+
+/* Map + Route Section */
+.map-route-section{background:var(--surface)}
+.route-map-wrap{display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start}
+.route-panel{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow-sm);position:sticky;top:90px}
+.route-panel h3{font-size:1.15rem;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.route-panel h3 i{color:var(--primary)}
+.route-panel .sub{font-size:.82rem;color:var(--text-muted);margin-bottom:24px}
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:.8rem;font-weight:600;margin-bottom:8px;color:var(--text-muted)}
+.form-group select{width:100%;padding:13px 16px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:.9rem;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235B6472' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.form-group select:focus{border-color:var(--primary)}
+.swap-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:none;border:1px dashed var(--border);border-radius:10px;width:100%;padding:8px;color:var(--text-muted);font-size:.78rem;cursor:pointer;margin-bottom:18px;transition:all .2s}
+.swap-btn:hover{border-color:var(--accent);color:var(--accent)}
+.route-stats{display:flex;gap:10px;margin:20px 0}
+.rs-box{flex:1;background:var(--surface);border-radius:10px;padding:14px 10px;text-align:center;border:1px solid var(--border)}
+.rs-box .rs-val{font-size:1.2rem;font-weight:800;color:var(--primary)}
+.rs-box .rs-lbl{font-size:.7rem;color:var(--text-muted)}
+.route-steps{max-height:220px;overflow-y:auto}
+.step-item{display:flex;gap:12px;padding-bottom:18px;position:relative}
+.step-item::before{content:'';position:absolute;left:10px;top:24px;bottom:0;width:2px;background:var(--border)}
+.step-item:last-child::before{display:none}
+.step-item:last-child{padding-bottom:0}
+.step-icon{width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.65rem;flex-shrink:0;z-index:1}
+.step-text{font-size:.84rem;padding-top:2px;line-height:1.4}
+.route-info{background:var(--primary-light);border-radius:10px;padding:12px 14px;font-size:.8rem;color:var(--primary);margin-top:16px;display:flex;align-items:center;gap:8px}
+.route-placeholder{text-align:center;padding:40px 16px;color:var(--text-muted)}
+.route-placeholder i{font-size:2.5rem;margin-bottom:14px;color:var(--border)}
+
+.map-container{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-md)}
+#campusMap{height:560px;width:100%;background:#e8f0e8}
+.map-controls{position:absolute;top:12px;right:12px;z-index:800;display:flex;flex-direction:column;gap:6px}
+.map-ctrl-btn{width:36px;height:36px;border-radius:8px;background:var(--surface);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;color:var(--text);box-shadow:var(--shadow-sm);transition:all .2s}
+.map-ctrl-btn:hover{background:var(--primary);color:#fff}
+.map-legend{display:flex;flex-wrap:wrap;gap:16px;padding:14px 20px;border-top:1px solid var(--border);font-size:.78rem;color:var(--text-muted)}
+.legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px}
+
+/* Leaflet custom */
+.leaflet-popup-content-wrapper{border-radius:14px!important;box-shadow:var(--shadow-lg)!important;padding:0!important;overflow:hidden}
+.leaflet-popup-content{margin:0!important;min-width:240px}
+.popup-img{width:100%;height:120px;object-fit:cover}
+.popup-body{padding:14px 16px}
+.popup-body h4{font-size:.95rem;margin-bottom:4px}
+.popup-body .pb-meta{font-size:.75rem;color:var(--text-muted);margin-bottom:8px}
+.popup-body p{font-size:.8rem;color:var(--text-muted);line-height:1.4;margin-bottom:10px}
+.popup-body .pb-row{display:flex;gap:12px;font-size:.75rem;color:var(--text-muted);margin-bottom:10px}
+.building-marker{width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,0.3);transition:transform .2s}
+.building-marker i{transform:rotate(45deg);color:#fff;font-size:13px}
+.building-marker.highlight{animation:marker-pulse 1s ease infinite}
+@keyframes marker-pulse{0%,100%{box-shadow:0 0 0 0 rgba(37,99,235,0.5)}50%{box-shadow:0 0 0 12px rgba(37,99,235,0)}}
+.route-animated{stroke-dasharray:12 8;animation:dash-move 1s linear infinite}
+@keyframes dash-move{to{stroke-dashoffset:-20}}
+
+/* Department Cards */
+.dept-scroll{display:flex;gap:22px;overflow-x:auto;padding:8px 4px 20px;scroll-snap-type:x mandatory;scrollbar-width:thin}
+.dept-scroll::-webkit-scrollbar{height:6px}
+.dept-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px}
+.dept-card{flex:0 0 300px;scroll-snap-align:start;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);transition:all .35s;cursor:pointer}
+.dept-card:hover{transform:translateY(-8px);box-shadow:var(--shadow-lg);border-color:var(--gold)}
+.dept-img-wrap{position:relative;height:180px;overflow:hidden}
+.dept-img-wrap img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
+.dept-card:hover .dept-img-wrap img{transform:scale(1.12)}
+.dept-badge{position:absolute;top:12px;left:12px;width:40px;height:40px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:1rem;box-shadow:var(--shadow-sm)}
+.dept-body{padding:20px}
+.dept-body h3{font-size:1.05rem;margin-bottom:6px}
+.dept-meta{font-size:.8rem;color:var(--text-muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.dept-timing{font-size:.78rem;color:var(--accent);font-weight:600;margin-bottom:10px}
+.dept-desc{font-size:.82rem;color:var(--text-muted);line-height:1.5;margin-bottom:14px}
+.dept-link{color:var(--primary);font-weight:600;font-size:.82rem;display:flex;align-items:center;gap:6px;transition:gap .2s}
+.dept-card:hover .dept-link{gap:10px}
+.dept-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px;justify-content:center}
+.filter-chip{padding:8px 16px;border-radius:999px;border:1.5px solid var(--border);background:var(--bg);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;color:var(--text-muted)}
+.filter-chip.active,.filter-chip:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* Info Grid */
+.info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:28px}
+.info-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow-sm)}
+.info-card h3{font-size:1.1rem;margin-bottom:20px;display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.info-card h3 i{color:var(--primary)}
+
+/* Contacts Table */
+.contact-list{display:flex;flex-direction:column;gap:0}
+.contact-row{display:grid;grid-template-columns:1fr 1.2fr;gap:8px;padding:14px 0;border-bottom:1px solid var(--border);align-items:center;transition:background .15s}
+.contact-row:last-child{border-bottom:none}
+.contact-row:hover{background:var(--bg);margin:0 -12px;padding-left:12px;padding-right:12px;border-radius:8px}
+.cr-designation{font-size:.78rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px}
+.cr-name{font-weight:600;font-size:.9rem}
+.cr-details{display:flex;flex-direction:column;gap:4px}
+.cr-details a{font-size:.8rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;transition:color .2s}
+.cr-details a:hover{color:var(--primary)}
+
+/* Events */
+.event-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+.event-item:last-child{border-bottom:none}
+.event-date{background:var(--primary-light);border-radius:10px;padding:10px 12px;text-align:center;min-width:56px}
+.event-date .ed-day{font-size:1.1rem;font-weight:800;color:var(--primary);line-height:1}
+.event-date .ed-mon{font-size:.65rem;font-weight:600;color:var(--primary);text-transform:uppercase}
+.event-info h4{font-size:.9rem;margin-bottom:4px}
+.event-info p{font-size:.78rem;color:var(--text-muted)}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.stat-card{text-align:center;padding:24px 16px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border);transition:all .3s}
+.stat-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-sm);border-color:var(--gold)}
+.stat-card i{font-size:1.5rem;color:var(--gold);margin-bottom:10px}
+.stat-num{font-size:2rem;font-weight:800;color:var(--navy);line-height:1}
+[data-theme="dark"] .stat-num{color:var(--gold)}
+.stat-lbl{font-size:.78rem;color:var(--text-muted);margin-top:4px}
+
+/* Gallery */
+.gallery-track{display:flex;gap:16px;overflow-x:auto;padding:8px 0 16px;scroll-snap-type:x mandatory}
+.gallery-item{flex:0 0 220px;scroll-snap-align:start;border-radius:var(--radius);overflow:hidden;aspect-ratio:4/3;cursor:pointer;box-shadow:var(--shadow-sm);transition:all .3s}
+.gallery-item:hover{transform:scale(1.03);box-shadow:var(--shadow-md)}
+.gallery-item img{width:100%;height:100%;object-fit:cover}
+
+/* Campus Bus */
+.bus-widget{background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:var(--radius);padding:28px;color:#fff;display:flex;align-items:center;gap:30px;flex-wrap:wrap}
+.bus-icon{width:64px;height:64px;background:var(--gold);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:var(--navy)}
+.bus-info h3{font-size:1.15rem;margin-bottom:8px}
+.bus-route{font-size:.88rem;color:rgba(255,255,255,0.75);margin-bottom:12px}
+.bus-times{display:flex;gap:20px}
+.bus-time span{display:block;font-size:.72rem;color:rgba(255,255,255,0.6)}
+.bus-time strong{font-size:1.1rem;color:var(--gold)}
+
+/* Footer */
+footer{background:var(--navy);color:rgba(255,255,255,0.7);padding:60px 0 24px}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;padding-bottom:36px;border-bottom:1px solid rgba(255,255,255,0.1)}
+.footer-brand{display:flex;align-items:center;gap:12px;color:#fff;font-weight:700;font-size:1.2rem;margin-bottom:14px}
+.footer-about{font-size:.85rem;line-height:1.7;max-width:300px;margin-bottom:20px}
+.social-links{display:flex;gap:10px}
+.social-links a{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;color:#fff;transition:all .2s}
+.social-links a:hover{background:var(--gold);color:var(--navy)}
+.footer-col h5{color:#fff;font-size:.9rem;margin-bottom:16px}
+.footer-col a{display:block;color:rgba(255,255,255,0.65);font-size:.84rem;margin-bottom:10px;transition:color .2s}
+.footer-col a:hover{color:var(--gold)}
+.footer-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:24px;font-size:.78rem;flex-wrap:wrap;gap:12px}
+.footer-bottom a{color:rgba(255,255,255,0.5);margin-left:16px}
+.footer-bottom a:hover{color:var(--gold)}
+
+/* Floating Widgets */
+.float-widgets{position:fixed;bottom:24px;right:24px;z-index:950;display:flex;flex-direction:column;gap:12px;align-items:flex-end}
+.ai-assistant{background:var(--primary);color:#fff;padding:14px 20px;border-radius:var(--radius);display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:0 8px 30px rgba(37,99,235,0.4);transition:all .3s;max-width:280px}
+.ai-assistant:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(37,99,235,0.5)}
+.ai-assistant i{font-size:1.5rem}
+.ai-assistant div small{display:block;font-size:.7rem;opacity:.8}
+.ai-assistant div strong{font-size:.9rem}
+.emergency-btn{background:#DC2626;color:#fff;padding:12px 20px;border-radius:var(--radius-sm);display:flex;align-items:center;gap:10px;cursor:pointer;border:none;font-family:inherit;font-weight:600;font-size:.85rem;box-shadow:0 6px 24px rgba(220,38,38,0.4);transition:all .3s}
+.emergency-btn:hover{transform:scale(1.05);background:#B91C1C}
+.emergency-panel{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:960;display:none;align-items:center;justify-content:center}
+.emergency-panel.show{display:flex}
+.emergency-modal{background:var(--surface);border-radius:var(--radius);padding:32px;max-width:400px;width:90%;text-align:center}
+.emergency-modal h3{color:#DC2626;margin-bottom:20px;font-size:1.2rem}
+.emergency-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.emergency-item{padding:16px;border-radius:var(--radius-sm);border:1px solid var(--border);cursor:pointer;transition:all .2s}
+.emergency-item:hover{border-color:#DC2626;background:#FEF2F2}
+.emergency-item i{font-size:1.5rem;color:#DC2626;margin-bottom:8px}
+.emergency-item span{display:block;font-size:.82rem;font-weight:600}
+.em-close{margin-top:20px;background:none;border:1px solid var(--border);padding:10px 24px;border-radius:8px;cursor:pointer;font-family:inherit}
+
+/* AI Chat */
+.ai-chat{position:fixed;bottom:100px;right:24px;width:340px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);z-index:940;display:none;flex-direction:column;overflow:hidden}
+.ai-chat.show{display:flex}
+.ai-chat-header{background:var(--primary);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+.ai-chat-header h4{font-size:.95rem}
+.ai-chat-close{background:none;border:none;color:#fff;cursor:pointer;font-size:1.1rem}
+.ai-chat-body{padding:16px;max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.ai-msg{padding:10px 14px;border-radius:12px;font-size:.84rem;line-height:1.5;max-width:85%}
+.ai-msg.bot{background:var(--bg);align-self:flex-start}
+.ai-msg.user{background:var(--primary);color:#fff;align-self:flex-end}
+.ai-suggestions{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 12px}
+.ai-sug{padding:6px 12px;border-radius:999px;border:1px solid var(--border);font-size:.75rem;cursor:pointer;transition:all .2s;background:var(--bg)}
+.ai-sug:hover{border-color:var(--primary);color:var(--primary)}
+.ai-chat-input{display:flex;border-top:1px solid var(--border);padding:12px;gap:8px}
+.ai-chat-input input{flex:1;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:inherit;font-size:.85rem;outline:none;background:var(--bg);color:var(--text)}
+.ai-chat-input button{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer}
+
+/* Toast & Back to top */
+#toastContainer{position:fixed;top:84px;right:24px;z-index:2000;display:flex;flex-direction:column;gap:10px}
+.toast{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;box-shadow:var(--shadow-lg);min-width:260px;display:flex;align-items:center;gap:12px;font-size:.86rem;animation:slideIn .35s ease}
+.toast.error{border-left-color:#DC2626}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.hide{animation:slideOut .35s forwards}
+@keyframes slideOut{to{transform:translateX(120%);opacity:0}}
+#backToTop{position:fixed;bottom:24px;left:24px;width:46px;height:46px;border-radius:50%;background:var(--navy);color:#fff;border:none;cursor:pointer;z-index:900;display:flex;align-items:center;justify-content:center;font-size:1rem;box-shadow:var(--shadow-md);opacity:0;visibility:hidden;transition:all .3s}
+#backToTop.show{opacity:1;visibility:visible}
+#backToTop:hover{background:var(--gold);color:var(--navy)}
+
+.mobile-menu{display:none;position:fixed;top:66px;left:0;right:0;background:var(--navy);border-bottom:1px solid rgba(255,255,255,0.1);flex-direction:column;padding:14px 24px;gap:4px;z-index:999}
+.mobile-menu.show{display:flex}
+.mobile-menu a{padding:12px 10px;border-radius:8px;font-weight:500;color:rgba(255,255,255,0.8)}
+.mobile-menu a:hover{background:rgba(255,255,255,0.1);color:#fff}
+
+@media(max-width:1100px){
+  .quick-grid{grid-template-columns:repeat(3,1fr)}
+  .places-grid{grid-template-columns:repeat(3,1fr)}
+  .route-map-wrap{grid-template-columns:1fr}
+  .route-panel{position:static}
+  .info-grid{grid-template-columns:1fr}
+  .footer-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:768px){
+  .nav-links,.weather-widget{display:none}
+  .hamburger{display:block}
+  .quick-grid{grid-template-columns:repeat(2,1fr)}
+  .places-grid{grid-template-columns:repeat(2,1fr)}
+  .hero{min-height:500px;padding:60px 20px 80px}
+  .section{padding:60px 0}
+  #campusMap{height:400px}
+  .bus-widget{flex-direction:column;text-align:center}
+  .footer-grid{grid-template-columns:1fr}
+  .ai-chat{width:calc(100% - 32px);right:16px;left:16px}
+  .float-widgets{right:16px;bottom:16px}
+}
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="loader-shield"><i class="fa-solid fa-shield-halved"></i></div>
+  <div class="loader-text">AMI Campus Navigator</div>
+  <div class="loader-bar"><span></span></div>
+</div>
+<div id="toastContainer"></div>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="#home" class="brand">
+      <div class="brand-shield"><i class="fa-solid fa-book-open"></i></div>
+      <div class="brand-text">AMI University<small>Learn. Innovate. Excel.</small></div>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#home" class="active">Home</a></li>
+      <li><a href="#explore">Explore Campus</a></li>
+      <li><a href="#departments">Departments</a></li>
+      <li><a href="#map-section">Map</a></li>
+      <li><a href="#events">Events</a></li>
+      <li><a href="#contacts">Contact Us</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div class="weather-widget" id="weatherWidget"><i class="fa-solid fa-sun"></i><span>28°C · Sunny</span></div>
+      <button class="nav-search-btn" onclick="document.getElementById('heroSearch').focus();scrollToSection('home')" title="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme"><i class="fa-solid fa-moon"></i></button>
+      <button class="hamburger" id="hamburger"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#home">Home</a><a href="#explore">Explore Campus</a><a href="#departments">Departments</a>
+    <a href="#map-section">Map</a><a href="#events">Events</a><a href="#contacts">Contact Us</a>
+  </div>
+</nav>
+
+<section id="home" class="hero">
+  <div class="hero-bg"></div><div class="hero-overlay"></div><div class="hero-gradient"></div>
+  <div class="container">
+    <div class="hero-badge" data-aos="fade-down"><i class="fa-solid fa-shield-halved"></i> AMI University · Campus Navigator</div>
+    <h1 data-aos="fade-up" data-aos-delay="100">Navigate. Discover. <span class="gold">Excel at AMI University.</span></h1>
+    <p data-aos="fade-up" data-aos-delay="200">Your smart guide for exploring departments, buildings, routes and campus facilities with ease.</p>
+    <div class="search-wrap" data-aos="fade-up" data-aos-delay="300">
+      <div class="search-box">
+        <input type="text" id="heroSearch" placeholder="Search departments, buildings, hostels, parking...">
+        <button class="btn btn-primary btn-search" onclick="performSearch()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+      </div>
+      <div class="search-results" id="searchResults"></div>
+    </div>
+    <div class="popular-tags" data-aos="fade-up" data-aos-delay="400">
+      <span>Popular:</span>
+      <span class="tag-pill" onclick="quickSearch('Library')">Library</span>
+      <span class="tag-pill" onclick="quickSearch('CSE Block')">CSE Block</span>
+      <span class="tag-pill" onclick="quickSearch('Hostel')">Hostel</span>
+      <span class="tag-pill" onclick="quickSearch('Auditorium')">Auditorium</span>
+      <span class="tag-pill" onclick="quickSearch('Cafeteria')">Cafeteria</span>
+    </div>
+    <div class="quick-grid" data-aos="fade-up" data-aos-delay="500">
+      <div class="quick-card" onclick="scrollToSection('departments')"><div class="qc-icon" style="background:#2563EB"><i class="fa-solid fa-building-columns"></i></div><h4>Departments</h4><p>25+ academic departments</p></div>
+      <div class="quick-card" onclick="scrollToSection('map-section')"><div class="qc-icon" style="background:#0D9488"><i class="fa-solid fa-map"></i></div><h4>Interactive Map</h4><p>Explore campus live</p></div>
+      <div class="quick-card" onclick="scrollToSection('map-section')"><div class="qc-icon" style="background:#EA580C"><i class="fa-solid fa-route"></i></div><h4>Route Finder</h4><p>Walking directions</p></div>
+      <div class="quick-card" onclick="scrollToSection('contacts')"><div class="qc-icon" style="background:#7C3AED"><i class="fa-solid fa-address-book"></i></div><h4>Contacts</h4><p>Key campus offices</p></div>
+      <div class="quick-card" onclick="scrollToSection('events')"><div class="qc-icon" style="background:#DC2626"><i class="fa-solid fa-calendar-days"></i></div><h4>Events</h4><p>Upcoming activities</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="explore" class="section">
+  <div class="container">
+    <div class="sec-head" data-aos="fade-up"><span class="eyebrow">Discover</span><h2>Popular Places</h2><p>Quick access to the most visited locations on campus.</p></div>
+    <div class="places-grid" id="placesGrid" data-aos="fade-up" data-aos-delay="100"></div>
+  </div>
+</section>
+
+<section id="map-section" class="section section-alt map-route-section">
+  <div class="container">
+    <div class="sec-head" data-aos="fade-up"><span class="eyebrow">Navigate</span><h2>Route Finder &amp; Interactive Campus Map</h2><p>Plan your route and explore every building on our hypothetical campus layout.</p></div>
+    <div class="route-map-wrap">
+      <div class="route-panel" data-aos="fade-right">
+        <h3><i class="fa-solid fa-diamond-turn-right"></i> Route Finder</h3>
+        <p class="sub">Choose start and destination — the map updates automatically.</p>
+        <div class="form-group"><label>From (Start)</label><select id="startSelect"></select></div>
+        <button class="swap-btn" id="swapBtn"><i class="fa-solid fa-arrow-right-arrow-left"></i> Swap locations</button>
+        <div class="form-group"><label>To (Destination)</label><select id="endSelect"></select></div>
+        <button class="btn btn-primary btn-block" id="findRouteBtn"><i class="fa-solid fa-location-arrow"></i> Find Route</button>
+        <div id="routeOutput" style="margin-top:20px"><div class="route-placeholder"><i class="fa-solid fa-map-location-dot"></i><p>Select locations and tap <strong>Find Route</strong></p></div></div>
+      </div>
+      <div class="map-container" data-aos="fade-left" style="position:relative">
+        <div id="campusMap"></div>
+        <div class="map-controls">
+          <button class="map-ctrl-btn" onclick="mapZoom(1)" title="Zoom in"><i class="fa-solid fa-plus"></i></button>
+          <button class="map-ctrl-btn" onclick="mapZoom(-1)" title="Zoom out"><i class="fa-solid fa-minus"></i></button>
+          <button class="map-ctrl-btn" onclick="resetMapView()" title="Reset"><i class="fa-solid fa-compress"></i></button>
+        </div>
+        <div class="map-legend">
+          <span><span class="legend-dot" style="background:#2563EB"></span> Academic</span>
+          <span><span class="legend-dot" style="background:#0D9488"></span> Facilities</span>
+          <span><span class="legend-dot" style="background:#EA580C"></span> Residential</span>
+          <span><span class="legend-dot" style="background:#DC2626"></span> Admin &amp; Entry</span>
+          <span><span class="legend-dot" style="background:#7C3AED"></span> Recreation</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="departments" class="section">
+  <div class="container">
+    <div class="sec-head-row" data-aos="fade-up">
+      <div class="sec-head"><span class="eyebrow">Academics</span><h2>Explore Departments</h2><p>Browse departments with building details, timings and map links.</p></div>
+      <a href="#map-section" class="view-all">View All <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+    <div class="dept-toolbar" id="filterChips" data-aos="fade-up" data-aos-delay="100"></div>
+    <div class="dept-scroll" id="deptScroll" data-aos="fade-up" data-aos-delay="200"></div>
+  </div>
+</section>
+
+<section id="info-section" class="section section-alt">
+  <div class="container">
+    <div class="info-grid">
+      <div class="info-card" id="contacts" data-aos="fade-up">
+        <h3><i class="fa-solid fa-address-book"></i> Important Contacts</h3>
+        <div class="contact-list" id="contactList"></div>
+      </div>
+      <div class="info-card" id="events" data-aos="fade-up" data-aos-delay="100">
+        <h3><i class="fa-solid fa-calendar-check"></i> Upcoming Events</h3>
+        <div id="eventsList"></div>
+      </div>
+      <div class="info-card" data-aos="fade-up" data-aos-delay="200">
+        <h3><i class="fa-solid fa-chart-simple"></i> Campus At A Glance</h3>
+        <div class="stats-grid" id="statsGrid"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="sec-head" data-aos="fade-up"><span class="eyebrow">Gallery</span><h2>Campus Gallery</h2><p>Glimpses of life at AMI University.</p></div>
+    <div class="gallery-track" id="galleryTrack" data-aos="fade-up" data-aos-delay="100"></div>
+  </div>
+</section>
+
+<section class="section section-alt">
+  <div class="container">
+    <div class="bus-widget" data-aos="fade-up">
+      <div class="bus-icon"><i class="fa-solid fa-bus"></i></div>
+      <div class="bus-info">
+        <h3>Campus Shuttle Service</h3>
+        <p class="bus-route"><i class="fa-solid fa-route"></i> Route: Boys Hostel → Main Gate → Library → CSE Block → Girls Hostel</p>
+        <div class="bus-times">
+          <div class="bus-time"><span>Current Bus</span><strong id="currentBus">09:45 AM</strong></div>
+          <div class="bus-time"><span>Next Bus</span><strong id="nextBus">10:30 AM</strong></div>
+          <div class="bus-time"><span>Bus ID</span><strong>AMI-07</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand"><div class="brand-shield" style="width:36px;height:36px;font-size:1rem"><i class="fa-solid fa-book-open"></i></div> AMI University</div>
+        <p class="footer-about">Spread across 120 acres, AMI University is home to 15,000+ students. Our campus blends modern academic blocks with green open spaces — navigate it all with AMI Campus Navigator.</p>
+        <div class="social-links">
+          <a href="#"><i class="fa-brands fa-facebook-f"></i></a>
+          <a href="#"><i class="fa-brands fa-twitter"></i></a>
+          <a href="#"><i class="fa-brands fa-instagram"></i></a>
+          <a href="#"><i class="fa-brands fa-linkedin-in"></i></a>
+          <a href="#"><i class="fa-brands fa-youtube"></i></a>
+        </div>
+      </div>
+      <div class="footer-col"><h5>Quick Links</h5><a href="#departments">Departments</a><a href="#map-section">Campus Map</a><a href="#map-section">Route Finder</a><a href="#contacts">Contact</a><a href="#events">Events</a></div>
+      <div class="footer-col"><h5>Academics</h5><a href="#">Admissions</a><a href="#">Programs</a><a href="#">Research</a><a href="#">Library</a><a href="#">Placements</a></div>
+      <div class="footer-col"><h5>Support</h5><a href="tel:+911800123456"><i class="fa-solid fa-phone"></i> +91 1800-123-456</a><a href="mailto:info@ami.edu"><i class="fa-solid fa-envelope"></i> info@ami.edu</a><a href="#"><i class="fa-solid fa-location-dot"></i> AMI Campus, Tech Park Road</a></div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 AMI University · AMI Campus Navigator</span>
+      <span><a href="#">Terms of Use</a><a href="#">Privacy Policy</a><a href="#">Accessibility</a></span>
+    </div>
+  </div>
+</footer>
+
+<button id="backToTop"><i class="fa-solid fa-arrow-up"></i></button>
+
+<div class="float-widgets">
+  <div class="ai-assistant" id="aiToggle"><i class="fa-solid fa-robot"></i><div><small>Need Help?</small><strong>Ask Campus AI</strong></div></div>
+  <button class="emergency-btn" id="emergencyBtn"><i class="fa-solid fa-bell"></i> Emergency</button>
+</div>
+
+<div class="ai-chat" id="aiChat">
+  <div class="ai-chat-header"><h4><i class="fa-solid fa-robot"></i> Campus AI Assistant</h4><button class="ai-chat-close" id="aiClose"><i class="fa-solid fa-xmark"></i></button></div>
+  <div class="ai-chat-body" id="aiBody"><div class="ai-msg bot">Hello! I'm Campus AI. Ask me about buildings, routes, or facilities at AMI University.</div></div>
+  <div class="ai-suggestions" id="aiSuggestions"></div>
+  <div class="ai-chat-input"><input type="text" id="aiInput" placeholder="Ask anything..."><button id="aiSend"><i class="fa-solid fa-paper-plane"></i></button></div>
+</div>
+
+<div class="emergency-panel" id="emergencyPanel">
+  <div class="emergency-modal">
+    <h3><i class="fa-solid fa-triangle-exclamation"></i> Emergency Contacts</h3>
+    <div class="emergency-grid">
+      <div class="emergency-item" onclick="window.location.href='tel:100'"><i class="fa-solid fa-shield"></i><span>Police (100)</span></div>
+      <div class="emergency-item" onclick="window.location.href='tel:+911800123401'"><i class="fa-solid fa-user-shield"></i><span>Campus Security</span></div>
+      <div class="emergency-item" onclick="window.location.href='tel:108'"><i class="fa-solid fa-truck-medical"></i><span>Ambulance (108)</span></div>
+      <div class="emergency-item" onclick="window.location.href='tel:+911800123405'"><i class="fa-solid fa-kit-medical"></i><span>Medical Centre</span></div>
+    </div>
+    <button class="em-close" onclick="document.getElementById('emergencyPanel').classList.remove('show')">Close</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+/* ============ CAMPUS DATA ============ */
+const locations = [
+  {id:'main-gate',name:'Main Gate',building:'Entry Point',category:'admin',lat:720,lng:600,icon:'fa-door-open',color:'#DC2626',floors:'Ground',timing:'24/7',phone:'+91 1800-123-400',img:'https://images.unsplash.com/photo-1562774053-701939374585?w=400',desc:'Main entrance to AMI University campus. Security checkpoint and visitor registration.'},
+  {id:'security',name:'Security Office',building:'Gate Complex',category:'admin',lat:700,lng:560,icon:'fa-shield-halved',color:'#DC2626',floors:'Ground',timing:'24/7',phone:'+91 1800-123-401',img:'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=400',desc:'Campus security desk and emergency response coordination.'},
+  {id:'admin',name:'Admin Block',building:'Administration',category:'admin',lat:620,lng:480,icon:'fa-building',color:'#DC2626',floors:'3 Floors',timing:'9 AM – 5 PM',phone:'+91 1800-123-402',img:'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400',desc:'Principal office, admissions, accounts and registrar.'},
+  {id:'library',name:'Central Library',building:'Library Block',category:'facility',lat:500,lng:420,icon:'fa-book',color:'#0D9488',floors:'4 Floors',timing:'8 AM – 8 PM',phone:'+91 1800-123-403',img:'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=400',desc:'50,000+ books, digital archives and 24/7 reading hall on 4th floor.'},
+  {id:'cse',name:'Computer Science & Engineering',building:'CSE Block',category:'engineering',lat:380,lng:520,icon:'fa-laptop-code',color:'#2563EB',floors:'4 Floors',timing:'8 AM – 6 PM',phone:'+91 1800-123-410',img:'https://images.unsplash.com/photo-1517694712202-14dd5638ebc0?w=400',desc:'AI labs, software engineering and data science programs.'},
+  {id:'aiml',name:'AI & Machine Learning',building:'AIML Block',category:'engineering',lat:360,lng:620,icon:'fa-brain',color:'#2563EB',floors:'3 Floors',timing:'8 AM – 6 PM',phone:'+91 1800-123-411',img:'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400',desc:'Deep learning labs, robotics and NLP research centre.'},
+  {id:'it',name:'Information Technology',building:'IT Block',category:'engineering',lat:400,lng:720,icon:'fa-network-wired',color:'#2563EB',floors:'3 Floors',timing:'8 AM – 6 PM',phone:'+91 1800-123-412',img:'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400',desc:'Networking, cloud computing and cybersecurity labs.'},
+  {id:'ece',name:'Electronics & Communication',building:'ECE Block',category:'engineering',lat:280,lng:580,icon:'fa-microchip',color:'#2563EB',floors:'4 Floors',timing:'8 AM – 6 PM',phone:'+91 1800-123-413',img:'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400',desc:'VLSI design, embedded systems and signal processing.'},
+  {id:'civil',name:'Civil Engineering',building:'Civil Block',category:'engineering',lat:200,lng:480,icon:'fa-drafting-compass',color:'#2563EB',floors:'3 Floors',timing:'8 AM – 6 PM',phone:'+91 1800-123-414',img:'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400',desc:'Structural design, surveying and materials testing.'},
+  {id:'mech',name:'Mechanical Engineering',building:'Mechanical Block',category:'engineering',lat:240,lng:380,icon:'fa-gears',color:'#2563EB',floors:'3 Floors',timing:'8 AM – 6 PM',phone:'+91 1800-123-415',img:'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400',desc:'Thermodynamics, robotics and CAD/CAM workshops.'},
+  {id:'parking',name:'Parking Area',building:'North Parking',category:'facility',lat:650,lng:700,icon:'fa-square-parking',color:'#64748B',floors:'Open',timing:'24/7',phone:'+91 1800-123-420',img:'https://images.unsplash.com/photo-1590674899487-f0bd69e90793?w=400',desc:'Multi-level parking for students, staff and visitors.'},
+  {id:'auditorium',name:'Auditorium',building:'Convention Hall',category:'facility',lat:180,lng:680,icon:'fa-microphone',color:'#7C3AED',floors:'2 Floors',timing:'9 AM – 9 PM',phone:'+91 1800-123-421',img:'https://images.unsplash.com/photo-1505373877841-8d25f39d4666?w=400',desc:'1200-seat auditorium for seminars, convocations and events.'},
+  {id:'sports',name:'Sports Complex',building:'Athletics Centre',category:'facility',lat:120,lng:780,icon:'fa-futbol',color:'#7C3AED',floors:'Ground',timing:'6 AM – 8 PM',phone:'+91 1800-123-422',img:'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400',desc:'Cricket ground, basketball courts, gym and swimming pool.'},
+  {id:'cafeteria',name:'Main Cafeteria',building:'Food Court',category:'facility',lat:320,lng:780,icon:'fa-utensils',color:'#7C3AED',floors:'2 Floors',timing:'7 AM – 10 PM',phone:'+91 1800-123-423',img:'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400',desc:'Multi-cuisine food court with indoor and outdoor seating.'},
+  {id:'boys-hostel',name:'Boys Hostel',building:'Residential Block A',category:'residential',lat:800,lng:300,icon:'fa-bed',color:'#EA580C',floors:'5 Floors',timing:'24/7',phone:'+91 1800-123-430',img:'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400',desc:'On-campus accommodation for 2000+ male students.'},
+  {id:'girls-hostel',name:'Girls Hostel',building:'Residential Block B',category:'residential',lat:820,lng:500,icon:'fa-house-user',color:'#EA580C',floors:'5 Floors',timing:'24/7',phone:'+91 1800-123-431',img:'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400',desc:'Secure residential block for female students with mess facility.'},
+  {id:'medical',name:'Medical Centre',building:'Health Centre',category:'facility',lat:450,lng:820,icon:'fa-kit-medical',color:'#0D9488',floors:'2 Floors',timing:'24/7',phone:'+91 1800-123-405',img:'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400',desc:'24/7 medical facility with ambulance and pharmacy.'},
+  {id:'bus-stop',name:'Campus Bus Stop',building:'Transport Hub',category:'facility',lat:740,lng:400,icon:'fa-bus',color:'#64748B',floors:'Ground',timing:'6 AM – 10 PM',phone:'+91 1800-123-440',img:'https://images.unsplash.com/photo-1544627667-0a4f9a85c2f0?w=400',desc:'Campus shuttle pickup point connecting all major blocks.'},
+  {id:'labs',name:'Research Labs',building:'Innovation Centre',category:'engineering',lat:300,lng:420,icon:'fa-flask',color:'#2563EB',floors:'2 Floors',timing:'8 AM – 8 PM',phone:'+91 1800-123-416',img:'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400',desc:'Advanced research laboratories for all engineering branches.'}
+];
+
+const contacts = [
+  {designation:'Principal',name:'Dr. Rahul Sharma',phone:'+91 98765 43210',email:'principal@ami.edu'},
+  {designation:'Registrar',name:'Dr. Priya Nair',phone:'+91 98765 43211',email:'registrar@ami.edu'},
+  {designation:'Dean Academics',name:'Prof. Amit Verma',phone:'+91 98765 43212',email:'dean@ami.edu'},
+  {designation:'Campus Security',name:'Mr. Suresh Kumar',phone:'+91 98765 43213',email:'security@ami.edu'},
+  {designation:'Hostel Warden',name:'Mrs. Kavita Singh',phone:'+91 98765 43214',email:'warden@ami.edu'},
+  {designation:'Medical Officer',name:'Dr. Neha Gupta',phone:'+91 98765 43215',email:'medical@ami.edu'},
+  {designation:'Transport',name:'Mr. Ramesh Yadav',phone:'+91 98765 43216',email:'transport@ami.edu'},
+  {designation:'IT Support',name:'Mr. Arjun Patel',phone:'+91 98765 43217',email:'itsupport@ami.edu'}
+];
+
+const events = [
+  {title:'AI & ML Workshop',date:'May 20',time:'10:00 AM – 4:00 PM',loc:'AIML Block, Lab 3'},
+  {title:'Inter-College Hackathon',date:'May 24',time:'9:00 AM – 6:00 PM',loc:'CSE Block Auditorium'},
+  {title:'Annual Sports Meet',date:'May 28',time:'7:00 AM – 5:00 PM',loc:'Sports Complex'},
+  {title:'Industry Seminar',date:'Jun 02',time:'2:00 PM – 5:00 PM',loc:'Main Auditorium'}
+];
+
+const popularPlaces = ['library','cse','boys-hostel','auditorium','sports','cafeteria'];
+const categoryLabels = {all:'All',engineering:'Engineering',facility:'Facilities',residential:'Residential',admin:'Admin'};
+
+/* Road network nodes for routing */
+const roadNodes = {
+  'main-gate':[720,600],'security':[700,560],'admin':[620,480],'library':[500,420],
+  'cse':[380,520],'aiml':[360,620],'it':[400,720],'ece':[280,580],'civil':[200,480],
+  'mech':[240,380],'parking':[650,700],'auditorium':[180,680],'sports':[120,780],
+  'cafeteria':[320,780],'boys-hostel':[800,300],'girls-hostel':[820,500],'medical':[450,820],
+  'bus-stop':[740,400],'labs':[300,420],
+  'j1':[680,600],'j2':[600,500],'j3':[500,500],'j4':[400,500],'j5':[300,500],
+  'j6':[500,600],'j7':[500,700],'j8':[600,700],'j9':[700,500],'j10':[400,600]
+};
+
+const roadEdges = [
+  ['main-gate','j1',80],['j1','security',60],['j1','parking',100],['j1','j2',120],
+  ['j2','admin',80],['j2','j3',100],['j3','library',80],['j3','j4',100],
+  ['j4','cse',80],['j4','j5',100],['j5','civil',80],['j5','mech',100],
+  ['j5','labs',60],['cse','j10',60],['j10','aiml',100],['aiml','it',100],
+  ['cse','ece',100],['ece','auditorium',120],['auditorium','sports',100],
+  ['j3','j6',100],['j6','cafeteria',120],['j6','j7',80],['j7','medical',100],
+  ['j7','it',80],['j2','j9',100],['j9','bus-stop',80],['bus-stop','boys-hostel',120],
+  ['boys-hostel','girls-hostel',100],['j9','girls-hostel',140],['j8','parking',80],
+  ['j1','j8',100],['library','labs',80],['admin','library',100]
+];
+
+/* ============ GLOBALS ============ */
+let map, markers = {}, routeLine = null, animMarker = null, activeCategory = 'all';
+
+/* ============ INIT ============ */
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => document.getElementById('loader').classList.add('hidden'), 800);
+  AOS.init({duration:700, once:true, offset:60});
+  initTheme(); initMobile(); initMap(); populateSelects();
+  renderPlaces(); renderChips(); renderDepartments();
+  renderContacts(); renderEvents(); renderStats(); renderGallery();
+  initSearch(); initRoute(); initAI(); initBusTimes(); initCounters();
+  setTimeout(() => showToast('Welcome to AMI Campus Navigator!', 'fa-hand-sparkles'), 1200);
+});
+
+/* ============ THEME ============ */
+function initTheme(){
+  const btn = document.getElementById('themeToggle');
+  btn.addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if(isDark){ document.documentElement.removeAttribute('data-theme'); btn.innerHTML = '<i class="fa-solid fa-moon"></i>'; showToast('Light mode enabled','fa-circle-check'); }
+    else { document.documentElement.setAttribute('data-theme','dark'); btn.innerHTML = '<i class="fa-solid fa-sun"></i>'; showToast('Dark mode enabled','fa-circle-check'); }
+  });
+}
+
+function initMobile(){
+  const ham = document.getElementById('hamburger'), menu = document.getElementById('mobileMenu');
+  ham.addEventListener('click', () => menu.classList.toggle('show'));
+  menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => menu.classList.remove('show')));
+}
+
+function scrollToSection(id){ document.getElementById(id).scrollIntoView({behavior:'smooth'}); }
+
+/* ============ TOAST ============ */
+function showToast(msg, icon='fa-circle-info', type=''){
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = `<i class="fa-solid ${icon}"></i><span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(t);
+  setTimeout(() => { t.classList.add('hide'); setTimeout(() => t.remove(), 350); }, 3000);
+}
+
+/* ============ LEAFLET MAP ============ */
+function initMap(){
+  map = L.map('campusMap', {crs:L.CRS.Simple, minZoom:-1, maxZoom:2, zoomControl:false});
+  const bounds = [[0,0],[900,1000]];
+  map.fitBounds(bounds);
+  map.setMaxBounds([[-50,-50],[950,1050]]);
+
+  /* Campus background */
+  const canvas = document.createElement('canvas');
+  canvas.width = 1000; canvas.height = 900;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#d4e8d4'; ctx.fillRect(0,0,1000,900);
+  /* Roads */
+  ctx.strokeStyle = '#b0b0b0'; ctx.lineWidth = 28; ctx.lineCap = 'round';
+  const roads = [[720,600,680,600,600,500,500,500,400,500,300,500],[500,500,500,420],[500,500,500,600,500,700],[400,500,400,600,360,620,400,720],[300,500,200,480],[300,500,240,380],[500,700,320,780,180,680,120,780],[680,600,700,500,740,400,800,300],[700,500,650,700],[500,700,450,820]];
+  roads.forEach(r => { ctx.beginPath(); ctx.moveTo(r[0],900-r[1]); for(let i=2;i<r.length;i+=2) ctx.lineTo(r[i],900-r[i+1]); ctx.stroke(); });
+  /* Grass patches */
+  ctx.fillStyle = '#c5dcc5';
+  [[50,50,200,150],[750,600,900,850],[100,650,250,850]].forEach(p => ctx.fillRect(p[0],p[1],p[2]-p[0],p[3]-p[1]));
+  /* Labels */
+  ctx.fillStyle = '#4a6741'; ctx.font = 'bold 14px Inter,sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('AMI UNIVERSITY CAMPUS', 500, 40);
+
+  const imgUrl = canvas.toDataURL();
+  L.imageOverlay(imgUrl, bounds).addTo(map);
+
+  /* Building markers */
+  locations.forEach(loc => {
+    const icon = L.divIcon({
+      className:'',
+      html:`<div class="building-marker" id="marker-${loc.id}" style="background:${loc.color}"><i class="fa-solid ${loc.icon}"></i></div>`,
+      iconSize:[36,36], iconAnchor:[18,36]
+    });
+    const marker = L.marker([loc.lat, loc.lng], {icon}).addTo(map);
+    marker.bindPopup(buildPopup(loc), {maxWidth:280, className:'building-popup'});
+    marker.on('click', () => highlightMarker(loc.id));
+    markers[loc.id] = marker;
+  });
+
+  /* Road node dots (subtle) */
+  Object.entries(roadNodes).forEach(([k,v]) => {
+    if(!locations.find(l=>l.id===k)){
+      L.circleMarker([v[0],v[1]],{radius:3,color:'#999',fillColor:'#ccc',fillOpacity:0.5,weight:1}).addTo(map);
+    }
+  });
+}
+
+function buildPopup(loc){
+  return `<img class="popup-img" src="${loc.img}" alt="${loc.name}"><div class="popup-body">
+    <h4>${loc.name}</h4><div class="pb-meta"><i class="fa-solid fa-location-dot"></i> ${loc.building} · ${loc.floors}</div>
+    <p>${loc.desc}</p><div class="pb-row"><span><i class="fa-solid fa-clock"></i> ${loc.timing}</span><span><i class="fa-solid fa-phone"></i> ${loc.phone}</span></div>
+    <button class="btn btn-primary btn-sm" onclick="setRouteTo('${loc.id}')" style="width:100%">Navigate Here</button></div>`;
+}
+
+function highlightMarker(id){
+  document.querySelectorAll('.building-marker').forEach(m => m.classList.remove('highlight'));
+  const el = document.getElementById('marker-'+id);
+  if(el) el.classList.add('highlight');
+}
+
+function mapZoom(dir){ map.setZoom(map.getZoom() + dir); }
+function resetMapView(){ map.fitBounds([[0,0],[900,1000]]); }
+
+function flyToLocation(id){
+  const loc = locations.find(l => l.id === id);
+  if(!loc) return;
+  map.flyTo([loc.lat, loc.lng], 0, {duration:1});
+  setTimeout(() => { markers[id].openPopup(); highlightMarker(id); }, 600);
+}
+
+function viewOnMap(id){
+  scrollToSection('map-section');
+  setTimeout(() => flyToLocation(id), 400);
+  const loc = locations.find(l => l.id === id);
+  if(loc) showToast(`Showing ${loc.name} on map`, 'fa-map-pin');
+}
+
+function setRouteTo(id){
+  document.getElementById('endSelect').value = id;
+  if(!document.getElementById('startSelect').value) document.getElementById('startSelect').value = 'main-gate';
+  findRoute();
+}
+
+/* ============ ROUTING (Dijkstra) ============ */
+function buildGraph(){
+  const g = {};
+  roadEdges.forEach(([a,b,d]) => {
+    if(!g[a]) g[a]={};
+    if(!g[b]) g[b]={};
+    g[a][b]=d; g[b][a]=d;
+  });
+  return g;
+}
+
+function dijkstra(start, end){
+  const graph = buildGraph();
+  const dist = {}, prev = {}, visited = new Set();
+  Object.keys(roadNodes).forEach(n => dist[n] = Infinity);
+  dist[start] = 0;
+  while(true){
+    let u = null, minD = Infinity;
+    Object.keys(dist).forEach(n => { if(!visited.has(n) && dist[n]<minD){minD=dist[n];u=n;} });
+    if(u === null || u === end) break;
+    visited.add(u);
+    if(graph[u]) Object.entries(graph[u]).forEach(([v,w]) => {
+      if(dist[u]+w < dist[v]){ dist[v]=dist[u]+w; prev[v]=u; }
+    });
+  }
+  const path = [];
+  let cur = end;
+  while(cur){ path.unshift(cur); cur = prev[cur]; }
+  if(path[0] !== start) return null;
+  return {path, distance:dist[end]};
+}
+
+function getPathCoords(nodePath){
+  return nodePath.map(n => { const c = roadNodes[n]; return [c[0], c[1]]; });
+}
+
+function findRoute(){
+  const startId = document.getElementById('startSelect').value;
+  const endId = document.getElementById('endSelect').value;
+  if(startId === endId){ showToast('Start and destination cannot be the same','fa-triangle-exclamation','error'); return; }
+  const result = dijkstra(startId, endId);
+  if(!result){ showToast('No route found between these locations','fa-triangle-exclamation','error'); return; }
+
+  const start = locations.find(l=>l.id===startId);
+  const end = locations.find(l=>l.id===endId);
+  const timeMin = Math.max(1, Math.round(result.distance / 80));
+  const steps = generateSteps(result.path, start, end);
+
+  document.getElementById('routeOutput').innerHTML = `
+    <div class="route-stats">
+      <div class="rs-box"><div class="rs-val">${result.distance}m</div><div class="rs-lbl">Distance</div></div>
+      <div class="rs-box"><div class="rs-val">${timeMin} min</div><div class="rs-lbl">Walk Time</div></div>
+      <div class="rs-box"><div class="rs-val">${steps.length}</div><div class="rs-lbl">Steps</div></div>
+    </div>
+    <div class="route-steps">${steps.map((s,i)=>`<div class="step-item"><div class="step-icon"><i class="fa-solid ${s.icon}"></i></div><div class="step-text">${s.text}</div></div>`).join('')}</div>
+    <div class="route-info"><i class="fa-solid fa-circle-info"></i> Fastest route with minimal walking distance.</div>`;
+
+  drawRoute(result.path);
+  showToast(`Route: ${start.name} → ${end.name} (${result.distance}m)`, 'fa-route');
+}
+
+function generateSteps(path, start, end){
+  const steps = [{icon:'fa-location-dot', text:`Start at ${start.name} (${start.building})`}];
+  const icons = ['fa-arrow-up','fa-arrow-turn-left','fa-arrow-up','fa-arrow-turn-right','fa-person-walking'];
+  for(let i=1;i<path.length-1;i++){
+    const loc = locations.find(l=>l.id===path[i]);
+    const name = loc ? loc.name : 'junction';
+    steps.push({icon:icons[i%icons.length], text:i===1?`Head towards ${name}`:`Continue past ${name}`});
+  }
+  steps.push({icon:'fa-flag-checkered', text:`Arrive at ${end.name}. Destination reached!`});
+  return steps;
+}
+
+function drawRoute(nodePath){
+  if(routeLine) map.removeLayer(routeLine);
+  if(animMarker) map.removeLayer(animMarker);
+  const coords = getPathCoords(nodePath);
+  routeLine = L.polyline(coords, {color:'#2563EB', weight:5, dashArray:'12 8', className:'route-animated'}).addTo(map);
+  map.fitBounds(routeLine.getBounds(), {padding:[40,40]});
+  animateAlongRoute(coords);
+}
+
+function animateAlongRoute(coords){
+  if(animMarker) map.removeLayer(animMarker);
+  animMarker = L.circleMarker(coords[0], {radius:8, color:'#2563EB', fillColor:'#60A5FA', fillOpacity:1, weight:3}).addTo(map);
+  let idx = 0, progress = 0;
+  function step(){
+    if(idx >= coords.length-1) return;
+    progress += 0.02;
+    if(progress >= 1){ progress = 0; idx++; }
+    if(idx < coords.length-1){
+      const lat = coords[idx][0]+(coords[idx+1][0]-coords[idx][0])*progress;
+      const lng = coords[idx][1]+(coords[idx+1][1]-coords[idx][1])*progress;
+      animMarker.setLatLng([lat,lng]);
+      requestAnimationFrame(step);
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+function populateSelects(){
+  const opts = locations.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+  document.getElementById('startSelect').innerHTML = opts;
+  document.getElementById('endSelect').innerHTML = opts;
+  document.getElementById('startSelect').value = 'main-gate';
+  document.getElementById('endSelect').value = 'library';
+}
+
+function initRoute(){
+  document.getElementById('findRouteBtn').addEventListener('click', findRoute);
+  document.getElementById('swapBtn').addEventListener('click', () => {
+    const s = document.getElementById('startSelect'), e = document.getElementById('endSelect');
+    const tmp = s.value; s.value = e.value; e.value = tmp;
+  });
+}
+
+/* ============ SEARCH ============ */
+function initSearch(){
+  const input = document.getElementById('heroSearch');
+  input.addEventListener('input', () => handleSearch(input.value));
+  input.addEventListener('keydown', e => { if(e.key==='Enter') performSearch(); });
+  document.addEventListener('click', e => { if(!e.target.closest('.search-wrap')) document.getElementById('searchResults').classList.remove('show'); });
+}
+
+function handleSearch(term){
+  const t = term.trim().toLowerCase();
+  const results = document.getElementById('searchResults');
+  if(!t){ results.classList.remove('show'); return; }
+  const matches = locations.filter(l => l.name.toLowerCase().includes(t) || l.building.toLowerCase().includes(t) || l.id.includes(t));
+  if(!matches.length){ results.innerHTML = `<div style="padding:16px;color:var(--text-muted)">No results for "${term}"</div>`; }
+  else {
+    results.innerHTML = matches.slice(0,8).map(m=>`
+      <div class="search-result-item" onclick="selectSearch('${m.id}')">
+        <div><div class="sri-name">${m.name}</div><div class="sri-building">${m.building}</div></div>
+        <i class="fa-solid fa-arrow-right" style="color:var(--text-muted);font-size:.8rem"></i>
+      </div>`).join('');
+  }
+  results.classList.add('show');
+}
+
+function performSearch(){
+  const term = document.getElementById('heroSearch').value.trim().toLowerCase();
+  if(!term) return;
+  const match = locations.find(l => l.name.toLowerCase().includes(term) || l.building.toLowerCase().includes(term));
+  if(match) selectSearch(match.id);
+  else showToast('No matching location found','fa-triangle-exclamation','error');
+}
+
+function quickSearch(term){ document.getElementById('heroSearch').value = term; performSearch(); }
+
+function selectSearch(id){
+  document.getElementById('searchResults').classList.remove('show');
+  viewOnMap(id);
+}
+
+/* ============ RENDER SECTIONS ============ */
+function renderPlaces(){
+  document.getElementById('placesGrid').innerHTML = popularPlaces.map(id => {
+    const p = locations.find(l=>l.id===id);
+    return `<div class="place-card" onclick="viewOnMap('${id}')"><img src="${p.img}" alt="${p.name}" loading="lazy"><div class="place-overlay"><span>${p.name}</span></div></div>`;
+  }).join('');
+}
+
+function renderChips(){
+  const el = document.getElementById('filterChips');
+  el.innerHTML = Object.keys(categoryLabels).map(c=>`<button class="filter-chip ${c===activeCategory?'active':''}" data-cat="${c}">${categoryLabels[c]}</button>`).join('');
+  el.querySelectorAll('.filter-chip').forEach(chip => chip.addEventListener('click', () => { activeCategory=chip.dataset.cat; renderChips(); renderDepartments(); }));
+}
+
+function renderDepartments(){
+  let list = activeCategory==='all' ? locations.filter(l=>l.category!=='admin') : locations.filter(l=>l.category===activeCategory);
+  document.getElementById('deptScroll').innerHTML = list.map(d=>`
+    <div class="dept-card" onclick="viewOnMap('${d.id}')">
+      <div class="dept-img-wrap"><img src="${d.img}" alt="${d.name}" loading="lazy"><div class="dept-badge" style="color:${d.color}"><i class="fa-solid ${d.icon}"></i></div></div>
+      <div class="dept-body"><h3>${d.name}</h3><div class="dept-meta"><i class="fa-solid fa-location-dot"></i> ${d.building} · ${d.floors}</div>
+      <div class="dept-timing"><i class="fa-solid fa-clock"></i> ${d.timing}</div><p class="dept-desc">${d.desc.substring(0,80)}...</p>
+      <span class="dept-link">View on Map <i class="fa-solid fa-arrow-right"></i></span></div></div>`).join('');
+}
+
+function renderContacts(){
+  document.getElementById('contactList').innerHTML = contacts.map(c=>`
+    <div class="contact-row"><div><div class="cr-designation">${c.designation}</div><div class="cr-name">${c.name}</div></div>
+    <div class="cr-details"><a href="tel:${c.phone.replace(/\s/g,'')}"><i class="fa-solid fa-phone"></i> ${c.phone}</a>
+    <a href="mailto:${c.email}"><i class="fa-solid fa-envelope"></i> ${c.email}</a></div></div>`).join('');
+}
+
+function renderEvents(){
+  document.getElementById('eventsList').innerHTML = events.map(e=>{
+    const parts = e.date.split(' ');
+    return `<div class="event-item"><div class="event-date"><div class="ed-day">${parts[1]||e.date}</div><div class="ed-mon">${parts[0]||''}</div></div>
+    <div class="event-info"><h4>${e.title}</h4><p><i class="fa-solid fa-clock"></i> ${e.time} · <i class="fa-solid fa-location-dot"></i> ${e.loc}</p></div></div>`;
+  }).join('');
+}
+
+function renderStats(){
+  const stats = [{icon:'fa-building-columns',num:25,suffix:'+',lbl:'Departments'},{icon:'fa-user-graduate',num:15000,suffix:'+',lbl:'Students'},{icon:'fa-chalkboard-user',num:350,suffix:'+',lbl:'Faculty'},{icon:'fa-tree',num:120,suffix:'',lbl:'Acres Campus'}];
+  document.getElementById('statsGrid').innerHTML = stats.map(s=>`
+    <div class="stat-card"><i class="fa-solid ${s.icon}"></i><div class="stat-num" data-target="${s.num}" data-suffix="${s.suffix}">0${s.suffix}</div><div class="stat-lbl">${s.lbl}</div></div>`).join('');
+}
+
+function renderGallery(){
+  const imgs = [
+    {src:'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=400',lbl:'Library'},
+    {src:'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400',lbl:'Labs'},
+    {src:'https://images.unsplash.com/photo-1505373877841-8d25f39d4666?w=400',lbl:'Auditorium'},
+    {src:'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400',lbl:'Hostel'},
+    {src:'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400',lbl:'Sports'},
+    {src:'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400',lbl:'Medical'},
+    {src:'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400',lbl:'Campus Garden'}
+  ];
+  document.getElementById('galleryTrack').innerHTML = imgs.map(i=>`<div class="gallery-item" title="${i.lbl}"><img src="${i.src}" alt="${i.lbl}" loading="lazy"></div>`).join('');
+}
+
+/* ============ ANIMATED COUNTERS ============ */
+function initCounters(){
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting){ animateCounter(e.target); observer.unobserve(e.target); }});
+  }, {threshold:0.5});
+  document.querySelectorAll('.stat-num').forEach(el => observer.observe(el));
+}
+
+function animateCounter(el){
+  const target = +el.dataset.target, suffix = el.dataset.suffix || '';
+  const duration = 2000, start = performance.now();
+  function update(now){
+    const p = Math.min((now-start)/duration, 1);
+    const ease = 1 - Math.pow(1-p, 3);
+    el.textContent = Math.floor(target*ease).toLocaleString() + suffix;
+    if(p < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+
+/* ============ CAMPUS BUS ============ */
+function initBusTimes(){
+  const now = new Date();
+  const mins = now.getHours()*60 + now.getMinutes();
+  const schedule = [6*60,7*60+30,9*60,9*60+45,10*60+30,12*60,14*60,15*60+30,17*60,18*60+30];
+  let cur = '06:00 AM', nxt = '07:30 AM';
+  for(let i=0;i<schedule.length;i++){
+    if(mins >= schedule[i]) cur = formatTime(schedule[i]);
+    if(mins < schedule[i]){ nxt = formatTime(schedule[i]); break; }
+  }
+  document.getElementById('currentBus').textContent = cur;
+  document.getElementById('nextBus').textContent = nxt;
+}
+function formatTime(m){ const h=Math.floor(m/60),mn=m%60,ap=h>=12?'PM':'AM',hr=h%12||12; return `${hr}:${mn<10?'0':''}${mn} ${ap}`; }
+
+/* ============ AI CHATBOT ============ */
+function initAI(){
+  const chat = document.getElementById('aiChat'), toggle = document.getElementById('aiToggle');
+  const suggestions = ['Where is CSE?','Where is Library?','Nearest cafeteria?','Route to Hostel','Campus timings'];
+  document.getElementById('aiSuggestions').innerHTML = suggestions.map(s=>`<span class="ai-sug" onclick="askAI('${s}')">${s}</span>`).join('');
+  toggle.addEventListener('click', () => chat.classList.toggle('show'));
+  document.getElementById('aiClose').addEventListener('click', () => chat.classList.remove('show'));
+  document.getElementById('aiSend').addEventListener('click', () => { const inp=document.getElementById('aiInput'); if(inp.value.trim()){askAI(inp.value);inp.value='';} });
+  document.getElementById('aiInput').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('aiSend').click(); });
+  document.getElementById('emergencyBtn').addEventListener('click', () => document.getElementById('emergencyPanel').classList.add('show'));
+}
+
+function askAI(q){
+  const body = document.getElementById('aiBody');
+  body.innerHTML += `<div class="ai-msg user">${q}</div>`;
+  const ql = q.toLowerCase();
+  let reply = "I can help you find buildings, routes, and contacts. Try asking about CSE, Library, Hostel, or Cafeteria.";
+  const match = locations.find(l => ql.includes(l.name.toLowerCase().split(' ')[0]) || ql.includes(l.id.replace('-',' ')) || (ql.includes('cse')&&l.id==='cse') || (ql.includes('library')&&l.id==='library') || (ql.includes('hostel')&&l.category==='residential') || (ql.includes('cafeteria')&&l.id==='cafeteria'));
+  if(ql.includes('where') && match) reply = `${match.name} is located at ${match.building} (${match.floors}). Open hours: ${match.timing}. Want me to show it on the map?`;
+  else if(ql.includes('route') || ql.includes('how to get')){
+    const dest = match || locations.find(l=>l.id==='library');
+    reply = `From Main Gate to ${dest.name}: approximately 650m, 8 min walk. Use the Route Finder above the map for step-by-step directions.`;
+    setTimeout(() => { document.getElementById('startSelect').value='main-gate'; document.getElementById('endSelect').value=dest.id; findRoute(); scrollToSection('map-section'); }, 500);
+  }
+  else if(ql.includes('cafeteria') || ql.includes('food')) reply = `The Main Cafeteria is in the Food Court, open ${locations.find(l=>l.id==='cafeteria').timing}. Multi-cuisine options available!`;
+  else if(ql.includes('timing') || ql.includes('hours')) reply = `Most academic blocks: 8 AM – 6 PM. Library: 8 AM – 8 PM. Hostels: 24/7. Admin: 9 AM – 5 PM.`;
+  else if(match) reply = `${match.name} — ${match.building}, ${match.floors}. ${match.desc}`;
+  setTimeout(() => {
+    body.innerHTML += `<div class="ai-msg bot">${reply}</div>`;
+    body.scrollTop = body.scrollHeight;
+    if(match && ql.includes('where')) setTimeout(() => viewOnMap(match.id), 800);
+  }, 600);
+  body.scrollTop = body.scrollHeight;
+}
+
+/* ============ SCROLL SPY & BACK TO TOP ============ */
+const backToTop = document.getElementById('backToTop');
+window.addEventListener('scroll', () => {
+  backToTop.classList.toggle('show', window.scrollY > 400);
+  const pos = window.scrollY + 100;
+  document.querySelectorAll('section[id], .info-card[id]').forEach(sec => {
+    if(pos >= sec.offsetTop && pos < sec.offsetTop + sec.offsetHeight){
+      document.querySelectorAll('.nav-links a').forEach(a => a.classList.toggle('active', a.getAttribute('href')==='#'+sec.id));
+    }
+  });
+});
+backToTop.addEventListener('click', () => window.scrollTo({top:0,behavior:'smooth'}));
+</script>
+</body>
+</html>
