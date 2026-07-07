@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMI Campus Navigator | AMI University</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+
+<style>
+  :root{
+    --navy:#0B1530;
+    --navy-2:#132348;
+    --primary:#1E40AF;
+    --primary-dark:#152E86;
+    --primary-light:#DBEAFE;
+    --gold:#F2B84B;
+    --gold-dark:#D99A22;
+    --accent:#0D9488;
+    --accent-light:#CCFBF1;
+    --bg:#F5F7FA;
+    --surface:#FFFFFF;
+    --text:#0F172A;
+    --text-muted:#5B6472;
+    --border:#E5E9F0;
+    --radius:16px;
+    --shadow-sm:0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+    --shadow-md:0 8px 24px rgba(15,23,42,0.08);
+    --shadow-lg:0 20px 48px rgba(15,23,42,0.16);
+  }
+  [data-theme="dark"]{
+    --bg:#0B1220; --surface:#111A2B; --text:#EAF0FB; --text-muted:#93A0B4;
+    --border:#1F2A3D; --primary-light:#152449; --accent-light:#0E2E2C;
+    --shadow-sm:0 1px 3px rgba(0,0,0,0.3); --shadow-md:0 8px 24px rgba(0,0,0,0.35); --shadow-lg:0 20px 48px rgba(0,0,0,0.5);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Inter', sans-serif; background:var(--bg); color:var(--text); transition:background .3s ease, color .3s ease;}
+  h1,h2,h3,h4,.brand{font-family:'Poppins', sans-serif;}
+  a{text-decoration:none; color:inherit;}
+  ul{list-style:none;}
+  section{scroll-margin-top:84px;}
+  img{max-width:100%; display:block;}
+  .container{max-width:1240px; margin:0 auto; padding:0 24px;}
+  ::-webkit-scrollbar{width:9px; height:9px;}
+  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:8px;}
+
+  /* Loader */
+  #loader{
+    position:fixed; inset:0; z-index:9999;
+    background:linear-gradient(135deg,var(--navy),#1E3A8A 60%, var(--accent));
+    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:18px;
+    transition:opacity .4s ease, visibility .4s ease;
+  }
+  #loader.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .loader-shield{width:60px; height:60px; animation:pulse 1.2s ease-in-out infinite;}
+  .loader-text{color:#fff; font-family:'Poppins',sans-serif; font-weight:600; letter-spacing:.3px;}
+  @keyframes pulse{0%,100%{transform:scale(1); opacity:1;} 50%{transform:scale(1.12); opacity:.75;}}
+  @keyframes spin{to{transform:rotate(360deg);}}
