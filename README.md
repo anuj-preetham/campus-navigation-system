@@ -1,16 +1,18 @@
-Campus Navigation System
+# Campus Navigation System
 
-📌 Project Overview
+## 📌 Project Overview
 
-The Campus Navigation System is a web application designed to help students, faculty, and visitors easily navigate the campus. It provides building locations,
-department information, route guidance, and important contact details, making it easier for new students to find their destinations.
+The Campus Navigation System is a web application designed to help students, faculty, and visitors easily navigate the campus. It provides building locations, department information, route guidance, and important contact details, making it easier for new students to find their destinations.
 
-🎯 Problem Statement
+---
 
-New students often find it difficult to navigate large campuses. This project provides an easy-to-use campus guide with maps, search functionality, and 
-navigation assistance.
+## 🎯 Problem Statement
 
-✨ Features
+New students often find it difficult to navigate large campuses. This project provides an easy-to-use campus guide with maps, search functionality, and navigation assistance.
+
+---
+
+## ✨ Features
 
 - 🏢 Department locations
 - 🔍 Search buildings
@@ -18,42 +20,85 @@ navigation assistance.
 - 📍 Route guidance
 - 📞 Important contacts
 - 📱 Responsive user interface
+- 🌙 Dark mode support
+- 🤖 AI-based campus assistant
+- 🚍 Campus bus timing information
+- 📅 Events and announcements section
 
-🛠️ Technologies Used
+---
+
+## 🛠️ Technologies Used
 
 - HTML5
 - CSS3
 - JavaScript
+- Leaflet.js
+- Font Awesome
 
-📂 Project Structure
+---
 
+## 🚀 Getting Started
+
+### Clone the repository
+
+```bash
+git clone https://github.com/anuj-preetham/campus-navigation-system.git
+```
+
+### Open the project
+
+Simply open `ami-campus-navigator.html` in any modern web browser.
+
+No additional dependencies or installation are required.
+
+---
+
+## 📂 Project Structure
+
+```
 Campus-Navigation-System/
-│── index.html
-│── css/
-│── js/
-│── images/
-│── README.md
+│── ami-campus-navigator.html
+│── campus-navigation-v2 (1).html
+│── chand(code).html
+│── prajwal(code).html
 │── CONTRIBUTORS.md
+│── README.md
+│── part1.txt
+│── part2.txt
+│── ...
+```
 
-👥 Team Members
+---
 
-- Member 1 – ANUJ PREETHAM
-- Member 2 – CHAND PATEL
-- Member 3 – PRAJWAL
-- Member 4 – P SRISHANTH
+## 👥 Team Members
 
-📋 Future Enhancements
+- Anuj Preetham
+- Chand Patel
+- Prajwal
+- P Srishanth
+
+---
+
+## 🔄 Git Workflow
+
+- Each member worked on separate branches.
+- Individual features were developed independently.
+- Changes were merged after testing.
+- Git commits were used to track project progress.
+
+---
+
+## 📋 Future Enhancements
 
 - Live GPS navigation
 - Voice-guided directions
 - Event location notifications
-- Dark mode
-- Mobile application support
+- Mobile application
+- Better route optimization
+- Real-time location tracking
 
-🤝 Contribution
+---
 
-Each team member worked on separate features using Git branches. All changes were merged through Pull Requests after review.
+## 📄 License
 
-📄 License
-
-This project is developed for academic purposes as part of the subject SOURCE CODE MANAGEMENT...
+This project was developed for academic purposes as part of the Source Code Management course.
