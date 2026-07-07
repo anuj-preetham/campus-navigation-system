@@ -1,0 +1,148 @@
+let routeLine = null, routeDot = null, routeAnimId = null;
+
+function findRoute(){
+  const startId = document.getElementById('startSelect').value;
+  const endId = document.getElementById('endSelect').value;
+  const resultBox = document.getElementById('routeResult');
+  if(startId===endId){ showToast('Start and destination are the same','error'); return; }
+  const result = dijkstra(startId,endId);
+  if(!result){ resultBox.innerHTML = `<div class="route-placeholder"><i class="fa-solid fa-circle-exclamation"></i> No path found.</div>`; return; }
+  const {path, distance} = result;
+  const meters = Math.round(distance);
+  const minutes = Math.max(1, Math.round(meters/80));
+
+  // Steps
+  let steps = [`Start at ${locById[path[0]].name}`];
+  for(let i=1;i<path.length-1;i++){
+    const dir = turnDirection(locById[path[i-1]], locById[path[i]], locById[path[i+1]]);
+    const label = dir==='straight' ? `Continue straight past ${locById[path[i]].name}` : `Turn ${dir} at ${locById[path[i]].name}`;
+    steps.push(label);
+  }
+  steps.push(`Arrive at ${locById[path[path.length-1]].name}`);
+
+  resultBox.innerHTML = `
+    <div class="route-stats">
+      <div class="rs-box"><div class="rs-val">${meters} m</div><div class="rs-lbl">Distance</div></div>
+      <div class="rs-box"><div class="rs-val">${minutes} min</div><div class="rs-lbl">Walking Time</div></div>
+      <div class="rs-box"><div class="rs-val">${path.length}</div><div class="rs-lbl">Waypoints</div></div>
+    </div>
+    <div class="steps">${steps.map((s,i)=>`<div class="step-item"><div class="step-num">${i+1}</div><div class="step-text">${s}</div></div>`).join('')}</div>`;
+
+  drawRouteOnMap(path);
+  document.getElementById('map').scrollIntoView({behavior:'smooth'});
+  showToast('Route found — animating on map');
+}
+
+function drawRouteOnMap(path){
+  if(routeLine) map.removeLayer(routeLine);
+  if(routeDot) map.removeLayer(routeDot);
+  if(routeAnimId) cancelAnimationFrame(routeAnimId);
+
+  const latlngs = path.map(id=> toLatLng(locById[id].x, locById[id].y));
+  routeLine = L.polyline(latlngs, {color:'#1E40AF', weight:6, opacity:0.85, dashArray:'1,12', lineCap:'round'}).addTo(map);
+
+  const dotIcon = L.divIcon({className:'', html:`<div style="width:16px;height:16px;border-radius:50%;background:#F2B84B;border:3px solid #1E40AF;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>`, iconSize:[16,16], iconAnchor:[8,8]});
+  routeDot = L.marker(latlngs[0], {icon:dotIcon}).addTo(map);
+
+  map.fitBounds(routeLine.getBounds(), {padding:[60,60]});
+
+  // animate dot along polyline
+  let segIndex = 0, t = 0;
+  const speed = 0.012;
+  function animate(){
+    if(segIndex >= latlngs.length-1){ segIndex=0; t=0; }
+    const p1 = latlngs[segIndex], p2 = latlngs[segIndex+1];
+    t += speed;
+    if(t >= 1){ t = 0; segIndex++; if(segIndex >= latlngs.length-1) segIndex=0; }
+    const lat = p1[0] + (p2[0]-p1[0])*t;
+    const lng = p1[1] + (p2[1]-p1[1])*t;
+    routeDot.setLatLng([lat,lng]);
+    routeAnimId = requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+function populateRouteSelects(){
+  const startSel = document.getElementById('startSelect');
+  const endSel = document.getElementById('endSelect');
+  const opts = LOCATIONS.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+  startSel.innerHTML = opts;
+  endSel.innerHTML = opts;
+  startSel.value = 'gate';
+  endSel.value = 'library';
+}
+document.getElementById('findRouteBtn').addEventListener('click', findRoute);
+document.getElementById('swapBtn').addEventListener('click', ()=>{
+  const s = document.getElementById('startSelect'), e = document.getElementById('endSelect');
+  const tmp = s.value; s.value = e.value; e.value = tmp;
+});
+
+/* ============================= AI ASSISTANT ============================= */
+const aiFab = document.getElementById('aiFab');
+const chatPanel = document.getElementById('chatPanel');
+const chatBody = document.getElementById('chatBody');
+aiFab.addEventListener('click', ()=> chatPanel.classList.toggle('open'));
+document.getElementById('chatClose').addEventListener('click', ()=> chatPanel.classList.remove('open'));
+
+function addChatMsg(text, who){
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + who;
+  div.textContent = text;
+  chatBody.appendChild(div);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+function aiRespond(q){
+  const lower = q.toLowerCase();
+  const found = LOCATIONS.find(l=> lower.includes(l.name.toLowerCase()) || lower.includes(l.id) || (l.name.toLowerCase().split(' ').some(w=> w.length>3 && lower.includes(w))));
+  if(lower.includes('cafeteria') || lower.includes('food')){
+    const l = locById['cafeteria'];
+    addChatMsg(`${l.name} is at ${l.building}, open ${l.timing}. I'll show it on the map.`,'bot');
+    viewOnMap('cafeteria'); return;
+  }
+  if(found){
+    addChatMsg(`${found.name} is located at ${found.building} (Floor: ${found.floor}), open ${found.timing}. Showing it on the map now.`, 'bot');
+    viewOnMap(found.id); return;
+  }
+  addChatMsg("I couldn't find that exact place. Try asking about CSE, Library, Hostel, Auditorium, Cafeteria, or Sports Complex.", 'bot');
+}
+document.getElementById('chatSend').addEventListener('click', ()=>{
+  const input = document.getElementById('chatInput');
+  const val = input.value.trim(); if(!val) return;
+  addChatMsg(val,'user'); input.value='';
+  setTimeout(()=> aiRespond(val), 400);
+});
+document.getElementById('chatInput').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('chatSend').click(); });
+document.querySelectorAll('.cq-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{ addChatMsg(btn.dataset.q,'user'); setTimeout(()=> aiRespond(btn.dataset.q),400); });
+});
+
+/* ============================= EMERGENCY PANEL ============================= */
+const emFab = document.getElementById('emergencyFab');
+const emPanel = document.getElementById('emergencyPanel');
+emFab.addEventListener('click', ()=> emPanel.classList.toggle('open'));
+document.getElementById('emClose').addEventListener('click', ()=> emPanel.classList.remove('open'));
+
+/* ============================= NAV ACTIVE LINK ============================= */
+const sections = ['home','route','map','departments','gallery','contact'];
+window.addEventListener('scroll', ()=>{
+  let current = 'home';
+  sections.forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && window.scrollY >= el.offsetTop - 120) current = id;
+  });
+  document.querySelectorAll('.nav-links a').forEach(a=>{
+    a.classList.toggle('active', a.getAttribute('href') === '#'+current);
+  });
+});
+
+/* ============================= INIT ============================= */
+renderPlaces();
+renderDepartments();
+renderGallery();
+renderContacts();
+renderEvents();
+populateRouteSelects();
+setTimeout(()=> document.querySelectorAll('.fade-up').forEach(el=>el.classList.add('in')), 300);
+</script>
+</body>
+</html>
