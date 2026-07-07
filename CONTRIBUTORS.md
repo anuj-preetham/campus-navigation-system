@@ -23,7 +23,10 @@
 - Assisted with feature integration
 
 ## Contribution Summary
+
 - Frontend Development
-- Documentation
-- GitHub Branches and Pull Requests
+- Interactive Campus Navigation
+- Documentation and Project Setup
+- Git Branch Management
+- Pull Request Integration
 - Testing and Bug Fixes
