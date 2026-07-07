@@ -1,0 +1,621 @@
+<!-- FLOATING WIDGETS -->
+<button id="backToTop"><i class="fa-solid fa-arrow-up"></i></button>
+
+<div class="fab-stack">
+  <button class="fab fab-emergency" id="emergencyFab"><i class="fa-solid fa-triangle-exclamation"></i><span class="fab-label">Emergency</span></button>
+  <button class="fab fab-ai" id="aiFab"><i class="fa-solid fa-robot"></i><span class="fab-label">Ask Campus AI</span></button>
+</div>
+
+<div class="chat-panel" id="chatPanel">
+  <div class="panel-head"><h4><i class="fa-solid fa-robot"></i> Campus AI Assistant</h4><button class="panel-close" id="chatClose"><i class="fa-solid fa-xmark"></i></button></div>
+  <div class="chat-body" id="chatBody">
+    <div class="chat-msg bot">Hi! I'm Campus AI 👋 Ask me things like "Where is CSE?" or "Nearest cafeteria?"</div>
+  </div>
+  <div class="chat-quick">
+    <button class="cq-btn" data-q="Where is CSE?">Where is CSE?</button>
+    <button class="cq-btn" data-q="Where is the Library?">Where is Library?</button>
+    <button class="cq-btn" data-q="Nearest cafeteria?">Nearest cafeteria?</button>
+  </div>
+  <div class="chat-input-row">
+    <input type="text" id="chatInput" placeholder="Ask a question...">
+    <button class="chat-send" id="chatSend"><i class="fa-solid fa-paper-plane"></i></button>
+  </div>
+</div>
+
+<div class="emergency-panel" id="emergencyPanel">
+  <div class="panel-head"><h4><i class="fa-solid fa-triangle-exclamation"></i> Emergency Help</h4><button class="panel-close" id="emClose"><i class="fa-solid fa-xmark"></i></button></div>
+  <div class="em-body">
+    <div class="em-item"><div class="em-icon"><i class="fa-solid fa-shield-halved"></i></div><div><h5>Campus Security</h5><span>+91 98765 43299</span></div><a href="tel:+919876543299"><i class="fa-solid fa-phone"></i></a></div>
+    <div class="em-item"><div class="em-icon"><i class="fa-solid fa-kit-medical"></i></div><div><h5>Medical Centre</h5><span>+91 98765 43215</span></div><a href="tel:+919876543215"><i class="fa-solid fa-phone"></i></a></div>
+    <div class="em-item"><div class="em-icon"><i class="fa-solid fa-truck-medical"></i></div><div><h5>Ambulance</h5><span>108</span></div><a href="tel:108"><i class="fa-solid fa-phone"></i></a></div>
+    <div class="em-item"><div class="em-icon"><i class="fa-solid fa-building-shield"></i></div><div><h5>Local Police</h5><span>100</span></div><a href="tel:100"><i class="fa-solid fa-phone"></i></a></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ============================= DATA ============================= */
+const LOCATIONS = [
+  {id:'gate', name:'Main Gate', building:'Entry Point', category:'entry', floor:'—', timing:'24 Hours', phone:'+91 98765 43220', desc:'Primary entrance to AMI University campus with visitor check-in.', icon:'fa-door-open', color:'#1e293b', x:110, y:600, illo:'gate'},
+  {id:'security', name:'Security Post', building:'Entry Point', category:'entry', floor:'Ground', timing:'24 Hours', phone:'+91 98765 43299', desc:'Campus security desk monitoring entry and exit at all hours.', icon:'fa-shield-halved', color:'#334155', x:190, y:560, illo:'gate'},
+  {id:'admin', name:'Admin Block', building:'Admin Block', category:'admin', floor:'Ground - 2nd Floor', timing:'9:00 AM - 5:00 PM', phone:'+91 98765 43210', desc:'Administrative offices handling admissions, records and finance.', icon:'fa-building-columns', color:'#2563EB', x:320, y:520, illo:'admin'},
+  {id:'library', name:'Central Library', building:'Library Block', category:'facility', floor:'Ground - 3rd Floor', timing:'8:00 AM - 8:00 PM', phone:'+91 98765 43230', desc:'Central library with reading halls, digital archive and study pods.', icon:'fa-book', color:'#7C3AED', x:430, y:430, illo:'library'},
+  {id:'cse', name:'Computer Science & Engineering', building:'CSE Block', category:'tech', group:'engineering', floor:'Ground - 3 Floors', timing:'9:00 AM - 4:30 PM', phone:'+91 98765 43241', desc:'Excellence in software development and research.', icon:'fa-code', color:'#2563EB', x:300, y:380, illo:'tower'},
+  {id:'aiml', name:'Artificial Intelligence & Machine Learning', building:'AIML Block', category:'tech', group:'tech', floor:'2 Floors', timing:'9:00 AM - 4:30 PM', phone:'+91 98765 43242', desc:'Shaping the future with intelligent systems.', icon:'fa-brain', color:'#7C3AED', x:560, y:380, illo:'tower'},
+  {id:'ece', name:'Electronics & Communication', building:'ECE Block', category:'engineering', group:'engineering', floor:'3 Floors', timing:'9:00 AM - 4:30 PM', phone:'+91 98765 43243', desc:'Innovation in electronics and communication systems.', icon:'fa-microchip', color:'#DB2777', x:660, y:440, illo:'block'},
+  {id:'it', name:'Information Technology', building:'IT Block', category:'tech', group:'tech', floor:'2 Floors', timing:'9:00 AM - 4:30 PM', phone:'+91 98765 43244', desc:'Innovate, integrate and elevate with modern IT.', icon:'fa-network-wired', color:'#059669', x:520, y:290, illo:'tower'},
+  {id:'civil', name:'Civil Engineering', building:'Civil Block', category:'engineering', group:'engineering', floor:'2 Floors', timing:'9:00 AM - 4:30 PM', phone:'+91 98765 43245', desc:'Designing tomorrow\'s infrastructure.', icon:'fa-drafting-compass', color:'#0D9488', x:360, y:290, illo:'block'},
+  {id:'mech', name:'Mechanical Engineering', building:'Mechanical Block', category:'engineering', group:'engineering', floor:'2 Floors', timing:'9:00 AM - 4:30 PM', phone:'+91 98765 43246', desc:'Building the world with innovation.', icon:'fa-gears', color:'#EA580C', x:250, y:340, illo:'block'},
+  {id:'labs', name:'Research Labs', building:'Labs Complex', category:'facility', floor:'Ground - 1st Floor', timing:'9:00 AM - 6:00 PM', phone:'+91 98765 43250', desc:'Shared research and innovation labs for all departments.', icon:'fa-flask', color:'#9333EA', x:480, y:340, illo:'block'},
+  {id:'parking', name:'Parking Area', building:'Parking Zone', category:'facility', floor:'Ground', timing:'24 Hours', phone:'+91 98765 43260', desc:'Covered parking for students, faculty and visitors.', icon:'fa-square-parking', color:'#475569', x:740, y:580, illo:'facility'},
+  {id:'auditorium', name:'Auditorium', building:'Auditorium', category:'facility', floor:'Ground Floor', timing:'8:00 AM - 9:00 PM', phone:'+91 98765 43270', desc:'1200-seat auditorium for events, seminars and workshops.', icon:'fa-masks-theater', color:'#B45309', x:620, y:230, illo:'dome'},
+  {id:'sports', name:'Sports Complex', building:'Sports Complex', category:'facility', floor:'Ground Floor', timing:'6:00 AM - 8:00 PM', phone:'+91 98765 43280', desc:'Indoor & outdoor courts, track and fitness centre.', icon:'fa-futbol', color:'#16A34A', x:840, y:290, illo:'sports'},
+  {id:'cafeteria', name:'Cafeteria', building:'Food Court', category:'facility', floor:'Ground Floor', timing:'7:30 AM - 8:30 PM', phone:'+91 98765 43290', desc:'Multi-cuisine food court serving the entire campus.', icon:'fa-utensils', color:'#D97706', x:660, y:540, illo:'facility'},
+  {id:'boysh', name:'Boys Hostel', building:'Hostel Block A', category:'hostel', floor:'Ground - 4 Floors', timing:'24 Hours', phone:'+91 98765 43213', desc:'Residential hostel with mess, common room and Wi-Fi.', icon:'fa-bed', color:'#1D4ED8', x:220, y:190, illo:'hostel'},
+  {id:'girlsh', name:'Girls Hostel', building:'Hostel Block B', category:'hostel', floor:'Ground - 4 Floors', timing:'24 Hours', phone:'+91 98765 43214', desc:'Residential hostel with mess, common room and Wi-Fi.', icon:'fa-bed', color:'#DB2777', x:470, y:150, illo:'hostel'},
+  {id:'medical', name:'Medical Centre', building:'Health Centre', category:'facility', floor:'Ground Floor', timing:'24 Hours', phone:'+91 98765 43215', desc:'On-campus clinic with resident doctor and first aid.', icon:'fa-kit-medical', color:'#DC2626', x:160, y:440, illo:'facility'},
+  {id:'busstop', name:'Bus Stop', building:'Transport Hub', category:'facility', floor:'—', timing:'6:00 AM - 9:00 PM', phone:'+91 98765 43295', desc:'Campus shuttle pickup and drop point.', icon:'fa-bus', color:'#0369A1', x:790, y:630, illo:'facility'}
+];
+
+const EDGES = [
+  ['gate','security',65],['security','admin',180],['admin','library',150],['admin','cse',140],
+  ['admin','cafeteria',340],['admin','medical',190],['library','cse',150],['library','aiml',210],
+  ['library','labs',110],['cse','mech',95],['mech','civil',110],['mech','boysh',160],
+  ['civil','boysh',175],['civil','it',175],['it','labs',80],['aiml','labs',95],['aiml','ece',150],
+  ['aiml','it',110],['it','auditorium',110],['auditorium','girlsh',150],['auditorium','sports',230],
+  ['ece','cafeteria',110],['ece','sports',210],['cafeteria','parking',110],['parking','busstop',110],
+  ['sports','parking',300],['girlsh','library',260],['medical','cse',150],['boysh','girlsh',260],
+  ['library','medical',270]
+];
+
+const CONTACTS = [
+  {role:'Vice Chancellor', name:'Dr. Arvind Kumar', phone:'+91 98765 43210', email:'vc@amiuniversity.edu.in'},
+  {role:'Registrar', name:'Dr. Neha Sharma', phone:'+91 98765 43211', email:'registrar@amiuniversity.edu.in'},
+  {role:'Dean Academics', name:'Dr. Rajesh Verma', phone:'+91 98765 43212', email:'dean.academics@amiuniversity.edu.in'},
+  {role:'Chief Warden (Hostel)', name:'Mr. Suresh Reddy', phone:'+91 98765 43213', email:'warden@amiuniversity.edu.in'},
+  {role:'Security Officer', name:'Mr. Mahesh Singh', phone:'+91 98765 43214', email:'security@amiuniversity.edu.in'},
+  {role:'Medical Officer', name:'Dr. Priya Patel', phone:'+91 98765 43215', email:'medical@amiuniversity.edu.in'}
+];
+
+const EVENTS = [
+  {d:'20', m:'MAY', title:'AI & ML Workshop', meta:'09:00 AM - 01:00 PM · Auditorium'},
+  {d:'24', m:'MAY', title:'Tech Innovators Hackathon', meta:'09:00 AM - 09:00 PM · CSE Block'},
+  {d:'28', m:'MAY', title:'Sports Day 2026', meta:'08:00 AM - 05:00 PM · Sports Complex'},
+  {d:'02', m:'JUN', title:'Research & Innovation Seminar', meta:'11:00 AM - 01:00 PM · Seminar Hall'}
+];
+
+const GALLERY = [
+  {id:'library', label:'Central Library'},
+  {id:'boysh', label:'Hostel Life'},
+  {id:'labs', label:'Research Labs'},
+  {id:'auditorium', label:'Auditorium'},
+  {id:'garden', label:'Campus Garden'},
+  {id:'sports', label:'Sports Complex'}
+];
+
+/* ============================= SVG ILLUSTRATIONS ============================= */
+function buildingSVG(kind, color){
+  const c = color || '#2563EB';
+  const win = `<g fill="rgba(255,255,255,0.85)">`;
+  switch(kind){
+    case 'tower':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#E7EEF9"/><rect x="0" y="150" width="400" height="70" fill="#CFE0D8"/>
+      <rect x="120" y="30" width="160" height="190" rx="4" fill="${c}"/>
+      <g fill="rgba(255,255,255,0.55)">${gridRects(132,45,18,14,6,4,26,20)}</g>
+      <rect x="60" y="120" width="50" height="100" fill="${shade(c,-18)}"/><rect x="290" y="100" width="55" height="120" fill="${shade(c,-10)}"/>
+      <circle cx="350" cy="45" r="22" fill="#F2B84B" opacity="0.8"/></svg>`;
+    case 'block':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#EAF1FB"/><rect x="0" y="160" width="400" height="60" fill="#D3E4DA"/>
+      <rect x="60" y="70" width="280" height="150" rx="5" fill="${c}"/><polygon points="60,70 200,30 340,70" fill="${shade(c,15)}"/>
+      <g fill="rgba(255,255,255,0.55)">${gridRects(80,95,20,16,6,5,30,22)}</g>
+      <rect x="185" y="150" width="30" height="70" fill="#1e293b"/></svg>`;
+    case 'admin':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#EAF1FB"/><rect x="0" y="165" width="400" height="55" fill="#D3E4DA"/>
+      <rect x="70" y="90" width="260" height="130" fill="${c}"/>
+      <g fill="#fff">${columns(90,95,220,120,7)}</g>
+      <polygon points="55,90 200,35 345,90" fill="${shade(c,20)}"/>
+      <rect x="185" y="165" width="30" height="55" fill="#1e293b"/></svg>`;
+    case 'library':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#EFEAFB"/><rect x="0" y="165" width="400" height="55" fill="#D3E4DA"/>
+      <rect x="55" y="95" width="290" height="125" fill="${c}"/><g fill="#fff">${columns(75,100,250,110,8)}</g>
+      <polygon points="40,95 200,45 360,95" fill="${shade(c,20)}"/>
+      <rect x="0" y="205" width="400" height="15" fill="${shade(c,-25)}"/></svg>`;
+    case 'dome':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#FBF1E2"/><rect x="0" y="165" width="400" height="55" fill="#D9E4CE"/>
+      <rect x="70" y="120" width="260" height="100" fill="${c}"/>
+      <path d="M110 120 A90 90 0 0 1 290 120 Z" fill="${shade(c,20)}"/>
+      <circle cx="200" cy="60" r="8" fill="${shade(c,20)}"/><rect x="196" y="30" width="8" height="30" fill="${shade(c,20)}"/>
+      <g fill="rgba(255,255,255,0.6)">${gridRects(95,150,20,20,6,3,32,0)}</g></svg>`;
+    case 'sports':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#EAF7EE"/>
+      <ellipse cx="200" cy="150" rx="170" ry="60" fill="#DCEFE1" stroke="#16A34A" stroke-width="4"/>
+      <ellipse cx="200" cy="150" rx="110" ry="34" fill="none" stroke="#16A34A" stroke-width="3" stroke-dasharray="6 6"/>
+      <rect x="60" y="55" width="280" height="55" rx="6" fill="${c}"/>
+      <g fill="rgba(255,255,255,0.6)">${gridRects(78,68,18,14,6,4,30,0)}</g></svg>`;
+    case 'hostel':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#EAF1FB"/><rect x="0" y="165" width="400" height="55" fill="#D3E4DA"/>
+      <rect x="90" y="45" width="220" height="175" rx="4" fill="${c}"/>
+      <g fill="rgba(255,255,255,0.6)">${gridRects(105,60,16,14,6,7,26,16)}</g>
+      <rect x="185" y="175" width="30" height="45" fill="#1e293b"/></svg>`;
+    case 'facility':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#F1F5F9"/><rect x="0" y="165" width="400" height="55" fill="#DDE7DD"/>
+      <rect x="100" y="95" width="200" height="125" rx="6" fill="${c}"/><polygon points="90,95 200,55 310,95" fill="${shade(c,18)}"/>
+      <g fill="rgba(255,255,255,0.6)">${gridRects(118,115,18,16,6,4,28,20)}</g></svg>`;
+    case 'garden':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#E8F5EC"/><rect x="0" y="140" width="400" height="80" fill="#BFE3C8"/>
+      <circle cx="90" cy="130" r="34" fill="#4CA85E"/><rect x="84" y="150" width="12" height="45" fill="#7C5A3A"/>
+      <circle cx="310" cy="120" r="40" fill="#3F9750"/><rect x="303" y="145" width="14" height="55" fill="#7C5A3A"/>
+      <circle cx="200" cy="150" r="26" fill="#5CB86B"/><rect x="195" y="165" width="10" height="35" fill="#7C5A3A"/>
+      <path d="M0 195 Q200 175 400 195 V220 H0 Z" fill="#8FBF97"/></svg>`;
+    default:
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#1e293b"/><rect x="150" y="60" width="18" height="160" fill="#334155"/><rect x="232" y="60" width="18" height="160" fill="#334155"/><rect x="150" y="60" width="100" height="14" fill="#334155"/>
+      <circle cx="200" cy="40" r="16" fill="#F2B84B"/></svg>`;
+  }
+}
+function shade(hex, pct){
+  let c = hex.replace('#','');
+  let num = parseInt(c,16);
+  let r=(num>>16)+pct, g=((num>>8)&0x00FF)+pct, b=(num&0x0000FF)+pct;
+  r=Math.max(Math.min(255,r),0); g=Math.max(Math.min(255,g),0); b=Math.max(Math.min(255,b),0);
+  return '#'+(0x1000000+r*0x10000+g*0x100+b).toString(16).slice(1);
+}
+function gridRects(x,y,w,h,gap,cols,rowGap,rows){
+  let s=''; const rr = rows||1;
+  for(let r=0;r< (rr? Math.max(1,Math.round(rr/rowGap)) : 3); r++){
+    for(let ccol=0; ccol<cols; ccol++){
+      s += `<rect x="${x+ccol*(w+gap)}" y="${y+r*(h+ (rowGap||h+gap))}" width="${w}" height="${h}"/>`;
+    }
+  }
+  return s;
+}
+function columns(x,y,totalW,h,count){
+  let s=''; const w= totalW/count*0.4; const gap=(totalW-count*w)/(count-1);
+  for(let i=0;i<count;i++){ s+= `<rect x="${x+i*(w+gap)}" y="${y}" width="${w}" height="${h}"/>`; }
+  return s;
+}
+
+/* ============================= LOOKUPS ============================= */
+const locById = Object.fromEntries(LOCATIONS.map(l=>[l.id,l]));
+const catColor = {entry:'#1e293b', admin:'#2563EB', facility:'#0D9488', hostel:'#DB2777', tech:'#2563EB', engineering:'#2563EB'};
+
+/* ============================= LOADER ============================= */
+window.addEventListener('load', ()=>{
+  setTimeout(()=>{ document.getElementById('loader').classList.add('hidden'); }, 500);
+});
+
+/* ============================= THEME TOGGLE ============================= */
+const themeToggle = document.getElementById('themeToggle');
+themeToggle.addEventListener('click', ()=>{
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  themeToggle.innerHTML = isDark ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
+});
+
+/* ============================= MOBILE MENU ============================= */
+document.getElementById('hamburgerBtn').addEventListener('click', ()=>{
+  const links = document.querySelector('.nav-links');
+  const isShown = links.style.display === 'flex';
+  links.style.cssText = isShown ? '' : 'display:flex; position:absolute; top:64px; left:0; right:0; background:var(--navy); flex-direction:column; padding:10px; z-index:999;';
+});
+
+/* ============================= TOAST ============================= */
+function showToast(msg, type='ok'){
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type==='error' ? ' error':'');
+  el.innerHTML = `<i class="fa-solid ${type==='error'?'fa-circle-exclamation':'fa-circle-check'}"></i><span>${msg}</span>`;
+  c.appendChild(el);
+  setTimeout(()=>{ el.classList.add('hide'); setTimeout(()=>el.remove(),300); }, 2800);
+}
+
+/* ============================= BACK TO TOP ============================= */
+const backBtn = document.getElementById('backToTop');
+window.addEventListener('scroll', ()=>{
+  backBtn.classList.toggle('show', window.scrollY > 500);
+  document.querySelectorAll('.fade-up').forEach(el=>{
+    const r = el.getBoundingClientRect();
+    if(r.top < window.innerHeight - 80) el.classList.add('in');
+  });
+});
+backBtn.addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'}));
+
+/* ============================= RENDER: PLACES, DEPTS, GALLERY, CONTACTS, EVENTS ============================= */
+const PLACE_IDS = ['library','auditorium','sports','boysh','labs','cafeteria'];
+function renderPlaces(){
+  const grid = document.getElementById('placesGrid');
+  grid.innerHTML = PLACE_IDS.map(id=>{
+    const l = locById[id];
+    return `<div class="place-card" onclick="viewOnMap('${l.id}')">
+      <div class="place-img">${buildingSVG(l.illo, l.color)}</div>
+      <div class="place-info"><h4>${l.name.split(' ').length>3? l.building : l.name}</h4><span>${l.timing}</span></div>
+    </div>`;
+  }).join('');
+}
+
+const DEPT_IDS = ['cse','aiml','ece','it','civil','mech'];
+function renderDepartments(filter='all'){
+  const grid = document.getElementById('deptGrid');
+  const list = DEPT_IDS.map(id=>locById[id]).filter(l=> filter==='all' || l.group===filter);
+  if(!list.length){ grid.innerHTML = `<div class="no-results"><i class="fa-solid fa-folder-open"></i><p>No departments match this filter.</p></div>`; return; }
+  grid.innerHTML = list.map(l=>`
+    <div class="dept-card">
+      <div class="dept-img">${buildingSVG(l.illo, l.color)}<span class="dept-tag">${l.building}</span></div>
+      <div class="dept-body">
+        <h3>${l.name}</h3>
+        <p class="dept-desc">${l.desc}</p>
+        <div class="dept-meta">
+          <span><i class="fa-solid fa-layer-group"></i> ${l.floor}</span>
+          <span><i class="fa-regular fa-clock"></i> ${l.timing}</span>
+        </div>
+        <div class="dept-footer">
+          <button class="btn btn-primary btn-sm btn-block" onclick="viewOnMap('${l.id}')"><i class="fa-solid fa-map-pin"></i> View on Map</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+document.getElementById('deptToolbar').addEventListener('click', e=>{
+  const chip = e.target.closest('.filter-chip'); if(!chip) return;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  renderDepartments(chip.dataset.filter);
+});
+
+function renderGallery(){
+  const track = document.getElementById('galleryTrack');
+  track.innerHTML = GALLERY.map(g=>{
+    const loc = locById[g.id];
+    const kind = loc ? loc.illo : g.id;
+    const color = loc ? loc.color : '#16A34A';
+    return `<div class="gallery-item">${buildingSVG(kind,color)}<div class="gallery-cap">${g.label}</div></div>`;
+  }).join('');
+}
+document.getElementById('galPrev').addEventListener('click', ()=> document.getElementById('galleryTrack').scrollBy({left:-280, behavior:'smooth'}));
+document.getElementById('galNext').addEventListener('click', ()=> document.getElementById('galleryTrack').scrollBy({left:280, behavior:'smooth'}));
+
+function renderContacts(){
+  document.getElementById('contactList').innerHTML = CONTACTS.map(c=>`
+    <div class="contact-row">
+      <div class="contact-avatar"><i class="fa-solid fa-user-tie"></i></div>
+      <div class="contact-info">
+        <div class="cname">${c.name}</div>
+        <div class="crole">${c.role}</div>
+      </div>
+      <div class="contact-links">
+        <a class="icon-btn" href="tel:${c.phone.replace(/\s/g,'')}" title="${c.phone}"><i class="fa-solid fa-phone"></i></a>
+        <a class="icon-btn" href="mailto:${c.email}" title="${c.email}"><i class="fa-solid fa-envelope"></i></a>
+      </div>
+    </div>`).join('');
+}
+
+function renderEvents(){
+  document.getElementById('eventList').innerHTML = EVENTS.map(e=>`
+    <div class="event-item">
+      <div class="event-date">${e.d}<small>${e.m}</small></div>
+      <div><div class="event-title">${e.title}</div><div class="event-meta">${e.meta}</div></div>
+    </div>`).join('');
+}
+
+/* ============================= STATS COUNTER ============================= */
+let statsAnimated = false;
+function animateStats(){
+  if(statsAnimated) return;
+  const bar = document.getElementById('statsBar');
+  const r = bar.getBoundingClientRect();
+  if(r.top > window.innerHeight - 100) return;
+  statsAnimated = true;
+  document.querySelectorAll('.stat-num').forEach(el=>{
+    const target = parseInt(el.dataset.target);
+    const suffix = el.dataset.suffix || '';
+    let cur = 0; const step = Math.max(1, Math.ceil(target/60));
+    const t = setInterval(()=>{
+      cur += step;
+      if(cur >= target){ cur = target; clearInterval(t); }
+      el.textContent = cur.toLocaleString() + suffix;
+    }, 25);
+  });
+}
+window.addEventListener('scroll', animateStats);
+
+/* ============================= SEARCH ============================= */
+const searchInput = document.getElementById('heroSearch');
+const searchResults = document.getElementById('searchResults');
+function doSearch(q){
+  q = q.trim().toLowerCase();
+  if(!q){ searchResults.classList.remove('show'); return; }
+  const matches = LOCATIONS.filter(l => l.name.toLowerCase().includes(q) || l.building.toLowerCase().includes(q));
+  if(!matches.length){
+    searchResults.innerHTML = `<div class="search-empty">No matches for "${q}"</div>`;
+  } else {
+    searchResults.innerHTML = matches.slice(0,8).map(l=>`
+      <div class="search-result-item" onclick="selectSearchResult('${l.id}')">
+        <div><div class="sri-name">${l.name}</div><div class="sri-building">${l.building}</div></div>
+        <i class="fa-solid fa-location-arrow" style="color:var(--primary)"></i>
+      </div>`).join('');
+  }
+  searchResults.classList.add('show');
+}
+searchInput.addEventListener('input', e=> doSearch(e.target.value));
+searchInput.addEventListener('focus', e=> { if(e.target.value) doSearch(e.target.value); });
+document.addEventListener('click', e=>{ if(!e.target.closest('.search-wrap')) searchResults.classList.remove('show'); });
+function selectSearchResult(id){
+  searchResults.classList.remove('show');
+  searchInput.value = locById[id].name;
+  viewOnMap(id);
+}
+document.querySelectorAll('.ps-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{ searchInput.value = chip.dataset.q; doSearch(chip.dataset.q); searchInput.focus(); });
+});
+
+/* ============================= LEAFLET MAP (CRS.Simple + custom illustrated map) ============================= */
+const MAP_W = 950, MAP_H = 700;
+function buildMapSVG(){
+  // Build one big illustrated "real hypothetical" campus map as SVG, encoded for Leaflet imageOverlay
+  let roads = EDGES.map(([a,b])=>{
+    const A = locById[a], B = locById[b];
+    return `<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>`;
+  }).join('');
+  let roadLines = EDGES.map(([a,b])=>{
+    const A = locById[a], B = locById[b];
+    return `<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" stroke="#c7d2e0" stroke-width="10" stroke-dasharray="2 10" stroke-linecap="round"/>`;
+  }).join('');
+  let buildings = LOCATIONS.map(l=>{
+    if(l.category==='entry') return '';
+    const w=54,h=40;
+    return `<rect x="${l.x-w/2}" y="${l.y-h/2}" width="${w}" height="${h}" rx="8" fill="${l.color}" opacity="0.16" stroke="${l.color}" stroke-width="2"/>`;
+  }).join('');
+  let trees = [[70,120],[880,150],[820,470],[60,470],[380,60],[900,600],[40,610],[600,650],[750,120],[120,320]]
+    .map(([x,y])=>`<circle cx="${x}" cy="${y}" r="16" fill="#8FBF97" opacity="0.7"/>`).join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${MAP_W}" height="${MAP_H}" viewBox="0 0 ${MAP_W} ${MAP_H}">
+    <rect width="${MAP_W}" height="${MAP_H}" fill="#e7f0e4"/>
+    <rect x="0" y="0" width="${MAP_W}" height="${MAP_H}" fill="#dce8f2" opacity="0.4"/>
+    ${trees}
+    ${roads}
+    ${roadLines}
+    ${buildings}
+    <rect x="700" y="540" width="120" height="80" fill="#cbd5c9" opacity="0.5" rx="4"/>
+    <text x="20" y="30" font-family="Poppins,sans-serif" font-size="20" font-weight="700" fill="#0B1530" opacity="0.35">AMI UNIVERSITY CAMPUS</text>
+  </svg>`;
+}
+const mapSVGData = 'data:image/svg+xml;base64,' + btoa(buildMapSVG());
+
+const map = L.map('campusMap', { crs: L.CRS.Simple, minZoom:-1, maxZoom:2, zoomControl:false, attributionControl:false });
+const bounds = [[0,0],[MAP_H, MAP_W]];
+L.imageOverlay(mapSVGData, bounds).addTo(map);
+map.fitBounds(bounds);
+map.setMaxBounds([[-80,-80],[MAP_H+80, MAP_W+80]]);
+
+function toLatLng(x,y){ return [MAP_H - y, x]; } // flip y for CRS.Simple
+
+const markers = {};
+LOCATIONS.forEach(l=>{
+  const icon = L.divIcon({
+    className:'',
+    html:`<div style="width:34px;height:34px;border-radius:50% 50% 50% 0;background:${l.color};transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,0.35);border:2px solid #fff;">
+      <i class="fa-solid ${l.icon}" style="transform:rotate(45deg);color:#fff;font-size:13px;"></i></div>`,
+    iconSize:[34,34], iconAnchor:[17,32], popupAnchor:[0,-30]
+  });
+  const marker = L.marker(toLatLng(l.x,l.y), {icon}).addTo(map);
+  marker.bindPopup(buildPopup(l), {closeButton:true});
+  markers[l.id] = marker;
+});
+
+function buildPopup(l){
+  return `<div class="map-popup">${buildingSVG(l.illo,l.color)}
+    <div class="popup-body">
+      <span class="popup-tag">${l.building}</span>
+      <h4>${l.name}</h4>
+      <div class="popup-meta">
+        <span><i class="fa-regular fa-clock"></i> ${l.timing}</span>
+        <span><i class="fa-solid fa-layer-group"></i> Floor: ${l.floor}</span>
+        <span><i class="fa-solid fa-phone"></i> ${l.phone}</span>
+      </div>
+      <p class="popup-desc">${l.desc}</p>
+      <div class="popup-btn" onclick="setAsDestination('${l.id}')">Set as Destination</div>
+    </div></div>`;
+}
+
+function viewOnMap(id){
+  const l = locById[id];
+  document.getElementById('map').scrollIntoView({behavior:'smooth', block:'start'});
+  setTimeout(()=>{
+    map.setView(toLatLng(l.x,l.y), 0.6, {animate:true});
+    markers[id].openPopup();
+    const el = markers[id].getElement();
+    if(el){ el.style.transition='transform .3s'; el.style.transform += ' scale(1.25)'; setTimeout(()=>{ el.style.transform = el.style.transform.replace(' scale(1.25)',''); },600); }
+  }, 400);
+}
+function setAsDestination(id){
+  document.getElementById('endSelect').value = id;
+  showToast(`${locById[id].name} set as destination`);
+  document.getElementById('route').scrollIntoView({behavior:'smooth'});
+}
+
+document.getElementById('zoomInBtn').addEventListener('click', ()=> map.zoomIn());
+document.getElementById('zoomOutBtn').addEventListener('click', ()=> map.zoomOut());
+document.getElementById('resetViewBtn').addEventListener('click', ()=> map.fitBounds(bounds));
+
+/* ============================= ROUTE FINDER (Dijkstra + animation) ============================= */
+const graph = {};
+LOCATIONS.forEach(l=> graph[l.id] = []);
+EDGES.forEach(([a,b,d])=>{ graph[a].push({to:b,d}); graph[b].push({to:a,d}); });
+
+function dijkstra(start,end){
+  const dist = {}, prev = {}, visited = new Set();
+  LOCATIONS.forEach(l=> dist[l.id]=Infinity);
+  dist[start]=0;
+  const pq = [[0,start]];
+  while(pq.length){
+    pq.sort((a,b)=>a[0]-b[0]);
+    const [d,u] = pq.shift();
+    if(visited.has(u)) continue;
+    visited.add(u);
+    if(u===end) break;
+    graph[u].forEach(edge=>{
+      const nd = d + edge.d;
+      if(nd < dist[edge.to]){ dist[edge.to]=nd; prev[edge.to]=u; pq.push([nd, edge.to]); }
+    });
+  }
+  if(dist[end]===Infinity) return null;
+  const path=[end]; let cur=end;
+  while(cur!==start){ cur=prev[cur]; path.unshift(cur); }
+  return {path, distance:dist[end]};
+}
+
+function turnDirection(p1,p2,p3){
+  const v1x=p2.x-p1.x, v1y=p2.y-p1.y, v2x=p3.x-p2.x, v2y=p3.y-p2.y;
+  const cross = v1x*v2y - v1y*v2x;
+  const dot = v1x*v2x+v1y*v2y;
+  const angle = Math.atan2(cross,dot) * 180/Math.PI;
+  if(Math.abs(angle) < 25) return 'straight';
+  return angle > 0 ? 'right' : 'left';
+}
+
+let routeLine = null, routeDot = null, routeAnimId = null;
+
+function findRoute(){
+  const startId = document.getElementById('startSelect').value;
+  const endId = document.getElementById('endSelect').value;
+  const resultBox = document.getElementById('routeResult');
+  if(startId===endId){ showToast('Start and destination are the same','error'); return; }
+  const result = dijkstra(startId,endId);
+  if(!result){ resultBox.innerHTML = `<div class="route-placeholder"><i class="fa-solid fa-circle-exclamation"></i> No path found.</div>`; return; }
+  const {path, distance} = result;
+  const meters = Math.round(distance);
+  const minutes = Math.max(1, Math.round(meters/80));
+
+  // Steps
+  let steps = [`Start at ${locById[path[0]].name}`];
+  for(let i=1;i<path.length-1;i++){
+    const dir = turnDirection(locById[path[i-1]], locById[path[i]], locById[path[i+1]]);
+    const label = dir==='straight' ? `Continue straight past ${locById[path[i]].name}` : `Turn ${dir} at ${locById[path[i]].name}`;
+    steps.push(label);
+  }
+  steps.push(`Arrive at ${locById[path[path.length-1]].name}`);
+
+  resultBox.innerHTML = `
+    <div class="route-stats">
+      <div class="rs-box"><div class="rs-val">${meters} m</div><div class="rs-lbl">Distance</div></div>
+      <div class="rs-box"><div class="rs-val">${minutes} min</div><div class="rs-lbl">Walking Time</div></div>
+      <div class="rs-box"><div class="rs-val">${path.length}</div><div class="rs-lbl">Waypoints</div></div>
+    </div>
+    <div class="steps">${steps.map((s,i)=>`<div class="step-item"><div class="step-num">${i+1}</div><div class="step-text">${s}</div></div>`).join('')}</div>`;
+
+  drawRouteOnMap(path);
+  document.getElementById('map').scrollIntoView({behavior:'smooth'});
+  showToast('Route found — animating on map');
+}
+
+function drawRouteOnMap(path){
+  if(routeLine) map.removeLayer(routeLine);
+  if(routeDot) map.removeLayer(routeDot);
+  if(routeAnimId) cancelAnimationFrame(routeAnimId);
+
+  const latlngs = path.map(id=> toLatLng(locById[id].x, locById[id].y));
+  routeLine = L.polyline(latlngs, {color:'#1E40AF', weight:6, opacity:0.85, dashArray:'1,12', lineCap:'round'}).addTo(map);
+
+  const dotIcon = L.divIcon({className:'', html:`<div style="width:16px;height:16px;border-radius:50%;background:#F2B84B;border:3px solid #1E40AF;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>`, iconSize:[16,16], iconAnchor:[8,8]});
+  routeDot = L.marker(latlngs[0], {icon:dotIcon}).addTo(map);
+
+  map.fitBounds(routeLine.getBounds(), {padding:[60,60]});
+
+  // animate dot along polyline
+  let segIndex = 0, t = 0;
+  const speed = 0.012;
+  function animate(){
+    if(segIndex >= latlngs.length-1){ segIndex=0; t=0; }
+    const p1 = latlngs[segIndex], p2 = latlngs[segIndex+1];
+    t += speed;
+    if(t >= 1){ t = 0; segIndex++; if(segIndex >= latlngs.length-1) segIndex=0; }
+    const lat = p1[0] + (p2[0]-p1[0])*t;
+    const lng = p1[1] + (p2[1]-p1[1])*t;
+    routeDot.setLatLng([lat,lng]);
+    routeAnimId = requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+function populateRouteSelects(){
+  const startSel = document.getElementById('startSelect');
+  const endSel = document.getElementById('endSelect');
+  const opts = LOCATIONS.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+  startSel.innerHTML = opts;
+  endSel.innerHTML = opts;
+  startSel.value = 'gate';
+  endSel.value = 'library';
+}
+document.getElementById('findRouteBtn').addEventListener('click', findRoute);
+document.getElementById('swapBtn').addEventListener('click', ()=>{
+  const s = document.getElementById('startSelect'), e = document.getElementById('endSelect');
+  const tmp = s.value; s.value = e.value; e.value = tmp;
+});
+
+/* ============================= AI ASSISTANT ============================= */
+const aiFab = document.getElementById('aiFab');
+const chatPanel = document.getElementById('chatPanel');
+const chatBody = document.getElementById('chatBody');
+aiFab.addEventListener('click', ()=> chatPanel.classList.toggle('open'));
+document.getElementById('chatClose').addEventListener('click', ()=> chatPanel.classList.remove('open'));
+
+function addChatMsg(text, who){
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + who;
+  div.textContent = text;
+  chatBody.appendChild(div);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+function aiRespond(q){
+  const lower = q.toLowerCase();
+  const found = LOCATIONS.find(l=> lower.includes(l.name.toLowerCase()) || lower.includes(l.id) || (l.name.toLowerCase().split(' ').some(w=> w.length>3 && lower.includes(w))));
+  if(lower.includes('cafeteria') || lower.includes('food')){
+    const l = locById['cafeteria'];
+    addChatMsg(`${l.name} is at ${l.building}, open ${l.timing}. I'll show it on the map.`,'bot');
+    viewOnMap('cafeteria'); return;
+  }
+  if(found){
+    addChatMsg(`${found.name} is located at ${found.building} (Floor: ${found.floor}), open ${found.timing}. Showing it on the map now.`, 'bot');
+    viewOnMap(found.id); return;
+  }
+  addChatMsg("I couldn't find that exact place. Try asking about CSE, Library, Hostel, Auditorium, Cafeteria, or Sports Complex.", 'bot');
+}
+document.getElementById('chatSend').addEventListener('click', ()=>{
+  const input = document.getElementById('chatInput');
+  const val = input.value.trim(); if(!val) return;
+  addChatMsg(val,'user'); input.value='';
+  setTimeout(()=> aiRespond(val), 400);
+});
+document.getElementById('chatInput').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('chatSend').click(); });
+document.querySelectorAll('.cq-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{ addChatMsg(btn.dataset.q,'user'); setTimeout(()=> aiRespond(btn.dataset.q),400); });
+});
+
+/* ============================= EMERGENCY PANEL ============================= */
+const emFab = document.getElementById('emergencyFab');
+const emPanel = document.getElementById('emergencyPanel');
+emFab.addEventListener('click', ()=> emPanel.classList.toggle('open'));
+document.getElementById('emClose').addEventListener('click', ()=> emPanel.classList.remove('open'));
+
+/* ============================= NAV ACTIVE LINK ============================= */
+const sections = ['home','route','map','departments','gallery','contact'];
+window.addEventListener('scroll', ()=>{
+  let current = 'home';
+  sections.forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && window.scrollY >= el.offsetTop - 120) current = id;
+  });
+  document.querySelectorAll('.nav-links a').forEach(a=>{
+    a.classList.toggle('active', a.getAttribute('href') === '#'+current);
+  });
+});
+
+/* ============================= INIT ============================= */
+renderPlaces();
+renderDepartments();
+renderGallery();
+renderContacts();
+renderEvents();
+populateRouteSelects();
+setTimeout(()=> document.querySelectorAll('.fade-up').forEach(el=>el.classList.add('in')), 300);
+</script>
+</body>
+</html>
