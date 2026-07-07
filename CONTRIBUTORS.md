@@ -7,17 +7,16 @@
 - Worked on project documentation
 - Helped with GitHub repository management
 
-### 2. Anuj Preetham
-- Developed the homepage
-- Designed the user interface
-
-### 3. Chand Patel
+### 2. Chand Patel
 - Implemented the interactive map
 - Added route guidance
 
-### 4. Prajwal
+### 3. Prajwal
 - Added building search
 - Tested the application and fixed bugs
+
+### 4. Anuj preetham 
+ - 
 
 ## Contribution Summary
 - Frontend Development
