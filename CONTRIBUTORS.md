@@ -15,8 +15,12 @@
 - Added parts of code (beginning)
 - helped in continuing the code for further changes
 
-### 4. Anuj preetham 
- - 
+### 4. Anuj Preetham
+- Improved project documentation
+- Enhanced campus navigation interface
+- Added UI refinements
+- Performed testing and bug fixes
+- Assisted with feature integration
 
 ## Contribution Summary
 - Frontend Development
