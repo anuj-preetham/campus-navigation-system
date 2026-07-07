@@ -1,0 +1,154 @@
+/* ============================= SEARCH ============================= */
+const searchInput = document.getElementById('heroSearch');
+const searchResults = document.getElementById('searchResults');
+function doSearch(q){
+  q = q.trim().toLowerCase();
+  if(!q){ searchResults.classList.remove('show'); return; }
+  const matches = LOCATIONS.filter(l => l.name.toLowerCase().includes(q) || l.building.toLowerCase().includes(q));
+  if(!matches.length){
+    searchResults.innerHTML = `<div class="search-empty">No matches for "${q}"</div>`;
+  } else {
+    searchResults.innerHTML = matches.slice(0,8).map(l=>`
+      <div class="search-result-item" onclick="selectSearchResult('${l.id}')">
+        <div><div class="sri-name">${l.name}</div><div class="sri-building">${l.building}</div></div>
+        <i class="fa-solid fa-location-arrow" style="color:var(--primary)"></i>
+      </div>`).join('');
+  }
+  searchResults.classList.add('show');
+}
+searchInput.addEventListener('input', e=> doSearch(e.target.value));
+searchInput.addEventListener('focus', e=> { if(e.target.value) doSearch(e.target.value); });
+document.addEventListener('click', e=>{ if(!e.target.closest('.search-wrap')) searchResults.classList.remove('show'); });
+function selectSearchResult(id){
+  searchResults.classList.remove('show');
+  searchInput.value = locById[id].name;
+  viewOnMap(id);
+}
+document.querySelectorAll('.ps-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{ searchInput.value = chip.dataset.q; doSearch(chip.dataset.q); searchInput.focus(); });
+});
+
+/* ============================= LEAFLET MAP (CRS.Simple + custom illustrated map) ============================= */
+const MAP_W = 950, MAP_H = 700;
+function buildMapSVG(){
+  // Build one big illustrated "real hypothetical" campus map as SVG, encoded for Leaflet imageOverlay
+  let roads = EDGES.map(([a,b])=>{
+    const A = locById[a], B = locById[b];
+    return `<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>`;
+  }).join('');
+  let roadLines = EDGES.map(([a,b])=>{
+    const A = locById[a], B = locById[b];
+    return `<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" stroke="#c7d2e0" stroke-width="10" stroke-dasharray="2 10" stroke-linecap="round"/>`;
+  }).join('');
+  let buildings = LOCATIONS.map(l=>{
+    if(l.category==='entry') return '';
+    const w=54,h=40;
+    return `<rect x="${l.x-w/2}" y="${l.y-h/2}" width="${w}" height="${h}" rx="8" fill="${l.color}" opacity="0.16" stroke="${l.color}" stroke-width="2"/>`;
+  }).join('');
+  let trees = [[70,120],[880,150],[820,470],[60,470],[380,60],[900,600],[40,610],[600,650],[750,120],[120,320]]
+    .map(([x,y])=>`<circle cx="${x}" cy="${y}" r="16" fill="#8FBF97" opacity="0.7"/>`).join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${MAP_W}" height="${MAP_H}" viewBox="0 0 ${MAP_W} ${MAP_H}">
+    <rect width="${MAP_W}" height="${MAP_H}" fill="#e7f0e4"/>
+    <rect x="0" y="0" width="${MAP_W}" height="${MAP_H}" fill="#dce8f2" opacity="0.4"/>
+    ${trees}
+    ${roads}
+    ${roadLines}
+    ${buildings}
+    <rect x="700" y="540" width="120" height="80" fill="#cbd5c9" opacity="0.5" rx="4"/>
+    <text x="20" y="30" font-family="Poppins,sans-serif" font-size="20" font-weight="700" fill="#0B1530" opacity="0.35">AMI UNIVERSITY CAMPUS</text>
+  </svg>`;
+}
+const mapSVGData = 'data:image/svg+xml;base64,' + btoa(buildMapSVG());
+
+const map = L.map('campusMap', { crs: L.CRS.Simple, minZoom:-1, maxZoom:2, zoomControl:false, attributionControl:false });
+const bounds = [[0,0],[MAP_H, MAP_W]];
+L.imageOverlay(mapSVGData, bounds).addTo(map);
+map.fitBounds(bounds);
+map.setMaxBounds([[-80,-80],[MAP_H+80, MAP_W+80]]);
+
+function toLatLng(x,y){ return [MAP_H - y, x]; } // flip y for CRS.Simple
+
+const markers = {};
+LOCATIONS.forEach(l=>{
+  const icon = L.divIcon({
+    className:'',
+    html:`<div style="width:34px;height:34px;border-radius:50% 50% 50% 0;background:${l.color};transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,0.35);border:2px solid #fff;">
+      <i class="fa-solid ${l.icon}" style="transform:rotate(45deg);color:#fff;font-size:13px;"></i></div>`,
+    iconSize:[34,34], iconAnchor:[17,32], popupAnchor:[0,-30]
+  });
+  const marker = L.marker(toLatLng(l.x,l.y), {icon}).addTo(map);
+  marker.bindPopup(buildPopup(l), {closeButton:true});
+  markers[l.id] = marker;
+});
+
+function buildPopup(l){
+  return `<div class="map-popup">${buildingSVG(l.illo,l.color)}
+    <div class="popup-body">
+      <span class="popup-tag">${l.building}</span>
+      <h4>${l.name}</h4>
+      <div class="popup-meta">
+        <span><i class="fa-regular fa-clock"></i> ${l.timing}</span>
+        <span><i class="fa-solid fa-layer-group"></i> Floor: ${l.floor}</span>
+        <span><i class="fa-solid fa-phone"></i> ${l.phone}</span>
+      </div>
+      <p class="popup-desc">${l.desc}</p>
+      <div class="popup-btn" onclick="setAsDestination('${l.id}')">Set as Destination</div>
+    </div></div>`;
+}
+
+function viewOnMap(id){
+  const l = locById[id];
+  document.getElementById('map').scrollIntoView({behavior:'smooth', block:'start'});
+  setTimeout(()=>{
+    map.setView(toLatLng(l.x,l.y), 0.6, {animate:true});
+    markers[id].openPopup();
+    const el = markers[id].getElement();
+    if(el){ el.style.transition='transform .3s'; el.style.transform += ' scale(1.25)'; setTimeout(()=>{ el.style.transform = el.style.transform.replace(' scale(1.25)',''); },600); }
+  }, 400);
+}
+function setAsDestination(id){
+  document.getElementById('endSelect').value = id;
+  showToast(`${locById[id].name} set as destination`);
+  document.getElementById('route').scrollIntoView({behavior:'smooth'});
+}
+
+document.getElementById('zoomInBtn').addEventListener('click', ()=> map.zoomIn());
+document.getElementById('zoomOutBtn').addEventListener('click', ()=> map.zoomOut());
+document.getElementById('resetViewBtn').addEventListener('click', ()=> map.fitBounds(bounds));
+
+/* ============================= ROUTE FINDER (Dijkstra + animation) ============================= */
+const graph = {};
+LOCATIONS.forEach(l=> graph[l.id] = []);
+EDGES.forEach(([a,b,d])=>{ graph[a].push({to:b,d}); graph[b].push({to:a,d}); });
+
+function dijkstra(start,end){
+  const dist = {}, prev = {}, visited = new Set();
+  LOCATIONS.forEach(l=> dist[l.id]=Infinity);
+  dist[start]=0;
+  const pq = [[0,start]];
+  while(pq.length){
+    pq.sort((a,b)=>a[0]-b[0]);
+    const [d,u] = pq.shift();
+    if(visited.has(u)) continue;
+    visited.add(u);
+    if(u===end) break;
+    graph[u].forEach(edge=>{
+      const nd = d + edge.d;
+      if(nd < dist[edge.to]){ dist[edge.to]=nd; prev[edge.to]=u; pq.push([nd, edge.to]); }
+    });
+  }
+  if(dist[end]===Infinity) return null;
+  const path=[end]; let cur=end;
+  while(cur!==start){ cur=prev[cur]; path.unshift(cur); }
+  return {path, distance:dist[end]};
+}
+
+function turnDirection(p1,p2,p3){
+  const v1x=p2.x-p1.x, v1y=p2.y-p1.y, v2x=p3.x-p2.x, v2y=p3.y-p2.y;
+  const cross = v1x*v2y - v1y*v2x;
+  const dot = v1x*v2x+v1y*v2y;
+  const angle = Math.atan2(cross,dot) * 180/Math.PI;
+  if(Math.abs(angle) < 25) return 'straight';
+  return angle > 0 ? 'right' : 'left';
+}
+
