@@ -1,0 +1,154 @@
+<!-- FLOATING WIDGETS -->
+<button id="backToTop"><i class="fa-solid fa-arrow-up"></i></button>
+
+<div class="fab-stack">
+  <button class="fab fab-emergency" id="emergencyFab"><i class="fa-solid fa-triangle-exclamation"></i><span class="fab-label">Emergency</span></button>
+  <button class="fab fab-ai" id="aiFab"><i class="fa-solid fa-robot"></i><span class="fab-label">Ask Campus AI</span></button>
+</div>
+
+<div class="chat-panel" id="chatPanel">
+  <div class="panel-head"><h4><i class="fa-solid fa-robot"></i> Campus AI Assistant</h4><button class="panel-close" id="chatClose"><i class="fa-solid fa-xmark"></i></button></div>
+  <div class="chat-body" id="chatBody">
+    <div class="chat-msg bot">Hi! I'm Campus AI 👋 Ask me things like "Where is CSE?" or "Nearest cafeteria?"</div>
+  </div>
+  <div class="chat-quick">
+    <button class="cq-btn" data-q="Where is CSE?">Where is CSE?</button>
+    <button class="cq-btn" data-q="Where is the Library?">Where is Library?</button>
+    <button class="cq-btn" data-q="Nearest cafeteria?">Nearest cafeteria?</button>
+  </div>
+  <div class="chat-input-row">
+    <input type="text" id="chatInput" placeholder="Ask a question...">
+    <button class="chat-send" id="chatSend"><i class="fa-solid fa-paper-plane"></i></button>
+  </div>
+</div>
+
+<div class="emergency-panel" id="emergencyPanel">
+  <div class="panel-head"><h4><i class="fa-solid fa-triangle-exclamation"></i> Emergency Help</h4><button class="panel-close" id="emClose"><i class="fa-solid fa-xmark"></i></button></div>
+  <div class="em-body">
+    <div class="em-item"><div class="em-icon"><i class="fa-solid fa-shield-halved"></i></div><div><h5>Campus Security</h5><span>+91 98765 43299</span></div><a href="tel:+919876543299"><i class="fa-solid fa-phone"></i></a></div>
+    <div class="em-item"><div class="em-icon"><i class="fa-solid fa-kit-medical"></i></div><div><h5>Medical Centre</h5><span>+91 98765 43215</span></div><a href="tel:+919876543215"><i class="fa-solid fa-phone"></i></a></div>
+    <div class="em-item"><div class="em-icon"><i class="fa-solid fa-truck-medical"></i></div><div><h5>Ambulance</h5><span>108</span></div><a href="tel:108"><i class="fa-solid fa-phone"></i></a></div>
+    <div class="em-item"><div class="em-icon"><i class="fa-solid fa-building-shield"></i></div><div><h5>Local Police</h5><span>100</span></div><a href="tel:100"><i class="fa-solid fa-phone"></i></a></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ============================= DATA ============================= */
+const LOCATIONS = [
+  {id:'gate', name:'Main Gate', building:'Entry Point', category:'entry', floor:'—', timing:'24 Hours', phone:'+91 98765 43220', desc:'Primary entrance to AMI University campus with visitor check-in.', icon:'fa-door-open', color:'#1e293b', x:110, y:600, illo:'gate'},
+  {id:'security', name:'Security Post', building:'Entry Point', category:'entry', floor:'Ground', timing:'24 Hours', phone:'+91 98765 43299', desc:'Campus security desk monitoring entry and exit at all hours.', icon:'fa-shield-halved', color:'#334155', x:190, y:560, illo:'gate'},
+  {id:'admin', name:'Admin Block', building:'Admin Block', category:'admin', floor:'Ground - 2nd Floor', timing:'9:00 AM - 5:00 PM', phone:'+91 98765 43210', desc:'Administrative offices handling admissions, records and finance.', icon:'fa-building-columns', color:'#2563EB', x:320, y:520, illo:'admin'},
+  {id:'library', name:'Central Library', building:'Library Block', category:'facility', floor:'Ground - 3rd Floor', timing:'8:00 AM - 8:00 PM', phone:'+91 98765 43230', desc:'Central library with reading halls, digital archive and study pods.', icon:'fa-book', color:'#7C3AED', x:430, y:430, illo:'library'},
+  {id:'cse', name:'Computer Science & Engineering', building:'CSE Block', category:'tech', group:'engineering', floor:'Ground - 3 Floors', timing:'9:00 AM - 4:30 PM', phone:'+91 98765 43241', desc:'Excellence in software development and research.', icon:'fa-code', color:'#2563EB', x:300, y:380, illo:'tower'},
+  {id:'aiml', name:'Artificial Intelligence & Machine Learning', building:'AIML Block', category:'tech', group:'tech', floor:'2 Floors', timing:'9:00 AM - 4:30 PM', phone:'+91 98765 43242', desc:'Shaping the future with intelligent systems.', icon:'fa-brain', color:'#7C3AED', x:560, y:380, illo:'tower'},
+  {id:'ece', name:'Electronics & Communication', building:'ECE Block', category:'engineering', group:'engineering', floor:'3 Floors', timing:'9:00 AM - 4:30 PM', phone:'+91 98765 43243', desc:'Innovation in electronics and communication systems.', icon:'fa-microchip', color:'#DB2777', x:660, y:440, illo:'block'},
+  {id:'it', name:'Information Technology', building:'IT Block', category:'tech', group:'tech', floor:'2 Floors', timing:'9:00 AM - 4:30 PM', phone:'+91 98765 43244', desc:'Innovate, integrate and elevate with modern IT.', icon:'fa-network-wired', color:'#059669', x:520, y:290, illo:'tower'},
+  {id:'civil', name:'Civil Engineering', building:'Civil Block', category:'engineering', group:'engineering', floor:'2 Floors', timing:'9:00 AM - 4:30 PM', phone:'+91 98765 43245', desc:'Designing tomorrow\'s infrastructure.', icon:'fa-drafting-compass', color:'#0D9488', x:360, y:290, illo:'block'},
+  {id:'mech', name:'Mechanical Engineering', building:'Mechanical Block', category:'engineering', group:'engineering', floor:'2 Floors', timing:'9:00 AM - 4:30 PM', phone:'+91 98765 43246', desc:'Building the world with innovation.', icon:'fa-gears', color:'#EA580C', x:250, y:340, illo:'block'},
+  {id:'labs', name:'Research Labs', building:'Labs Complex', category:'facility', floor:'Ground - 1st Floor', timing:'9:00 AM - 6:00 PM', phone:'+91 98765 43250', desc:'Shared research and innovation labs for all departments.', icon:'fa-flask', color:'#9333EA', x:480, y:340, illo:'block'},
+  {id:'parking', name:'Parking Area', building:'Parking Zone', category:'facility', floor:'Ground', timing:'24 Hours', phone:'+91 98765 43260', desc:'Covered parking for students, faculty and visitors.', icon:'fa-square-parking', color:'#475569', x:740, y:580, illo:'facility'},
+  {id:'auditorium', name:'Auditorium', building:'Auditorium', category:'facility', floor:'Ground Floor', timing:'8:00 AM - 9:00 PM', phone:'+91 98765 43270', desc:'1200-seat auditorium for events, seminars and workshops.', icon:'fa-masks-theater', color:'#B45309', x:620, y:230, illo:'dome'},
+  {id:'sports', name:'Sports Complex', building:'Sports Complex', category:'facility', floor:'Ground Floor', timing:'6:00 AM - 8:00 PM', phone:'+91 98765 43280', desc:'Indoor & outdoor courts, track and fitness centre.', icon:'fa-futbol', color:'#16A34A', x:840, y:290, illo:'sports'},
+  {id:'cafeteria', name:'Cafeteria', building:'Food Court', category:'facility', floor:'Ground Floor', timing:'7:30 AM - 8:30 PM', phone:'+91 98765 43290', desc:'Multi-cuisine food court serving the entire campus.', icon:'fa-utensils', color:'#D97706', x:660, y:540, illo:'facility'},
+  {id:'boysh', name:'Boys Hostel', building:'Hostel Block A', category:'hostel', floor:'Ground - 4 Floors', timing:'24 Hours', phone:'+91 98765 43213', desc:'Residential hostel with mess, common room and Wi-Fi.', icon:'fa-bed', color:'#1D4ED8', x:220, y:190, illo:'hostel'},
+  {id:'girlsh', name:'Girls Hostel', building:'Hostel Block B', category:'hostel', floor:'Ground - 4 Floors', timing:'24 Hours', phone:'+91 98765 43214', desc:'Residential hostel with mess, common room and Wi-Fi.', icon:'fa-bed', color:'#DB2777', x:470, y:150, illo:'hostel'},
+  {id:'medical', name:'Medical Centre', building:'Health Centre', category:'facility', floor:'Ground Floor', timing:'24 Hours', phone:'+91 98765 43215', desc:'On-campus clinic with resident doctor and first aid.', icon:'fa-kit-medical', color:'#DC2626', x:160, y:440, illo:'facility'},
+  {id:'busstop', name:'Bus Stop', building:'Transport Hub', category:'facility', floor:'—', timing:'6:00 AM - 9:00 PM', phone:'+91 98765 43295', desc:'Campus shuttle pickup and drop point.', icon:'fa-bus', color:'#0369A1', x:790, y:630, illo:'facility'}
+];
+
+const EDGES = [
+  ['gate','security',65],['security','admin',180],['admin','library',150],['admin','cse',140],
+  ['admin','cafeteria',340],['admin','medical',190],['library','cse',150],['library','aiml',210],
+  ['library','labs',110],['cse','mech',95],['mech','civil',110],['mech','boysh',160],
+  ['civil','boysh',175],['civil','it',175],['it','labs',80],['aiml','labs',95],['aiml','ece',150],
+  ['aiml','it',110],['it','auditorium',110],['auditorium','girlsh',150],['auditorium','sports',230],
+  ['ece','cafeteria',110],['ece','sports',210],['cafeteria','parking',110],['parking','busstop',110],
+  ['sports','parking',300],['girlsh','library',260],['medical','cse',150],['boysh','girlsh',260],
+  ['library','medical',270]
+];
+
+const CONTACTS = [
+  {role:'Vice Chancellor', name:'Dr. Arvind Kumar', phone:'+91 98765 43210', email:'vc@amiuniversity.edu.in'},
+  {role:'Registrar', name:'Dr. Neha Sharma', phone:'+91 98765 43211', email:'registrar@amiuniversity.edu.in'},
+  {role:'Dean Academics', name:'Dr. Rajesh Verma', phone:'+91 98765 43212', email:'dean.academics@amiuniversity.edu.in'},
+  {role:'Chief Warden (Hostel)', name:'Mr. Suresh Reddy', phone:'+91 98765 43213', email:'warden@amiuniversity.edu.in'},
+  {role:'Security Officer', name:'Mr. Mahesh Singh', phone:'+91 98765 43214', email:'security@amiuniversity.edu.in'},
+  {role:'Medical Officer', name:'Dr. Priya Patel', phone:'+91 98765 43215', email:'medical@amiuniversity.edu.in'}
+];
+
+const EVENTS = [
+  {d:'20', m:'MAY', title:'AI & ML Workshop', meta:'09:00 AM - 01:00 PM · Auditorium'},
+  {d:'24', m:'MAY', title:'Tech Innovators Hackathon', meta:'09:00 AM - 09:00 PM · CSE Block'},
+  {d:'28', m:'MAY', title:'Sports Day 2026', meta:'08:00 AM - 05:00 PM · Sports Complex'},
+  {d:'02', m:'JUN', title:'Research & Innovation Seminar', meta:'11:00 AM - 01:00 PM · Seminar Hall'}
+];
+
+const GALLERY = [
+  {id:'library', label:'Central Library'},
+  {id:'boysh', label:'Hostel Life'},
+  {id:'labs', label:'Research Labs'},
+  {id:'auditorium', label:'Auditorium'},
+  {id:'garden', label:'Campus Garden'},
+  {id:'sports', label:'Sports Complex'}
+];
+
+/* ============================= SVG ILLUSTRATIONS ============================= */
+function buildingSVG(kind, color){
+  const c = color || '#2563EB';
+  const win = `<g fill="rgba(255,255,255,0.85)">`;
+  switch(kind){
+    case 'tower':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#E7EEF9"/><rect x="0" y="150" width="400" height="70" fill="#CFE0D8"/>
+      <rect x="120" y="30" width="160" height="190" rx="4" fill="${c}"/>
+      <g fill="rgba(255,255,255,0.55)">${gridRects(132,45,18,14,6,4,26,20)}</g>
+      <rect x="60" y="120" width="50" height="100" fill="${shade(c,-18)}"/><rect x="290" y="100" width="55" height="120" fill="${shade(c,-10)}"/>
+      <circle cx="350" cy="45" r="22" fill="#F2B84B" opacity="0.8"/></svg>`;
+    case 'block':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#EAF1FB"/><rect x="0" y="160" width="400" height="60" fill="#D3E4DA"/>
+      <rect x="60" y="70" width="280" height="150" rx="5" fill="${c}"/><polygon points="60,70 200,30 340,70" fill="${shade(c,15)}"/>
+      <g fill="rgba(255,255,255,0.55)">${gridRects(80,95,20,16,6,5,30,22)}</g>
+      <rect x="185" y="150" width="30" height="70" fill="#1e293b"/></svg>`;
+    case 'admin':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#EAF1FB"/><rect x="0" y="165" width="400" height="55" fill="#D3E4DA"/>
+      <rect x="70" y="90" width="260" height="130" fill="${c}"/>
+      <g fill="#fff">${columns(90,95,220,120,7)}</g>
+      <polygon points="55,90 200,35 345,90" fill="${shade(c,20)}"/>
+      <rect x="185" y="165" width="30" height="55" fill="#1e293b"/></svg>`;
+    case 'library':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#EFEAFB"/><rect x="0" y="165" width="400" height="55" fill="#D3E4DA"/>
+      <rect x="55" y="95" width="290" height="125" fill="${c}"/><g fill="#fff">${columns(75,100,250,110,8)}</g>
+      <polygon points="40,95 200,45 360,95" fill="${shade(c,20)}"/>
+      <rect x="0" y="205" width="400" height="15" fill="${shade(c,-25)}"/></svg>`;
+    case 'dome':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#FBF1E2"/><rect x="0" y="165" width="400" height="55" fill="#D9E4CE"/>
+      <rect x="70" y="120" width="260" height="100" fill="${c}"/>
+      <path d="M110 120 A90 90 0 0 1 290 120 Z" fill="${shade(c,20)}"/>
+      <circle cx="200" cy="60" r="8" fill="${shade(c,20)}"/><rect x="196" y="30" width="8" height="30" fill="${shade(c,20)}"/>
+      <g fill="rgba(255,255,255,0.6)">${gridRects(95,150,20,20,6,3,32,0)}</g></svg>`;
+    case 'sports':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#EAF7EE"/>
+      <ellipse cx="200" cy="150" rx="170" ry="60" fill="#DCEFE1" stroke="#16A34A" stroke-width="4"/>
+      <ellipse cx="200" cy="150" rx="110" ry="34" fill="none" stroke="#16A34A" stroke-width="3" stroke-dasharray="6 6"/>
+      <rect x="60" y="55" width="280" height="55" rx="6" fill="${c}"/>
+      <g fill="rgba(255,255,255,0.6)">${gridRects(78,68,18,14,6,4,30,0)}</g></svg>`;
+    case 'hostel':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#EAF1FB"/><rect x="0" y="165" width="400" height="55" fill="#D3E4DA"/>
+      <rect x="90" y="45" width="220" height="175" rx="4" fill="${c}"/>
+      <g fill="rgba(255,255,255,0.6)">${gridRects(105,60,16,14,6,7,26,16)}</g>
+      <rect x="185" y="175" width="30" height="45" fill="#1e293b"/></svg>`;
+    case 'facility':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#F1F5F9"/><rect x="0" y="165" width="400" height="55" fill="#DDE7DD"/>
+      <rect x="100" y="95" width="200" height="125" rx="6" fill="${c}"/><polygon points="90,95 200,55 310,95" fill="${shade(c,18)}"/>
+      <g fill="rgba(255,255,255,0.6)">${gridRects(118,115,18,16,6,4,28,20)}</g></svg>`;
+    case 'garden':
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#E8F5EC"/><rect x="0" y="140" width="400" height="80" fill="#BFE3C8"/>
+      <circle cx="90" cy="130" r="34" fill="#4CA85E"/><rect x="84" y="150" width="12" height="45" fill="#7C5A3A"/>
+      <circle cx="310" cy="120" r="40" fill="#3F9750"/><rect x="303" y="145" width="14" height="55" fill="#7C5A3A"/>
+      <circle cx="200" cy="150" r="26" fill="#5CB86B"/><rect x="195" y="165" width="10" height="35" fill="#7C5A3A"/>
+      <path d="M0 195 Q200 175 400 195 V220 H0 Z" fill="#8FBF97"/></svg>`;
+    default:
+      return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="220" fill="#1e293b"/><rect x="150" y="60" width="18" height="160" fill="#334155"/><rect x="232" y="60" width="18" height="160" fill="#334155"/><rect x="150" y="60" width="100" height="14" fill="#334155"/>
+      <circle cx="200" cy="40" r="16" fill="#F2B84B"/></svg>`;
+  }
+}
