@@ -998,7 +998,7 @@ function doSearch(q){
   if(!q){ searchResults.classList.remove('show'); return; }
   const matches = LOCATIONS.filter(l => l.name.toLowerCase().includes(q) || l.building.toLowerCase().includes(q));
   if(!matches.length){
-    searchResults.innerHTML = `<div class="search-empty">No matches for "${q}"</div>`;
+    searchResults.innerHTML = `<div class="search-empty">No matching departments, buildings, or facilities found for "${q}".\nTry searching for Library, CSE, Hostel, Auditorium, or Cafeteria.</div>`;
   } else {
     searchResults.innerHTML = matches.slice(0,8).map(l=>`
       <div class="search-result-item" onclick="selectSearchResult('${l.id}')">
