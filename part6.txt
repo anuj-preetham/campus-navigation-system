@@ -1,0 +1,165 @@
+function shade(hex, pct){
+  let c = hex.replace('#','');
+  let num = parseInt(c,16);
+  let r=(num>>16)+pct, g=((num>>8)&0x00FF)+pct, b=(num&0x0000FF)+pct;
+  r=Math.max(Math.min(255,r),0); g=Math.max(Math.min(255,g),0); b=Math.max(Math.min(255,b),0);
+  return '#'+(0x1000000+r*0x10000+g*0x100+b).toString(16).slice(1);
+}
+function gridRects(x,y,w,h,gap,cols,rowGap,rows){
+  let s=''; const rr = rows||1;
+  for(let r=0;r< (rr? Math.max(1,Math.round(rr/rowGap)) : 3); r++){
+    for(let ccol=0; ccol<cols; ccol++){
+      s += `<rect x="${x+ccol*(w+gap)}" y="${y+r*(h+ (rowGap||h+gap))}" width="${w}" height="${h}"/>`;
+    }
+  }
+  return s;
+}
+function columns(x,y,totalW,h,count){
+  let s=''; const w= totalW/count*0.4; const gap=(totalW-count*w)/(count-1);
+  for(let i=0;i<count;i++){ s+= `<rect x="${x+i*(w+gap)}" y="${y}" width="${w}" height="${h}"/>`; }
+  return s;
+}
+
+/* ============================= LOOKUPS ============================= */
+const locById = Object.fromEntries(LOCATIONS.map(l=>[l.id,l]));
+const catColor = {entry:'#1e293b', admin:'#2563EB', facility:'#0D9488', hostel:'#DB2777', tech:'#2563EB', engineering:'#2563EB'};
+
+/* ============================= LOADER ============================= */
+window.addEventListener('load', ()=>{
+  setTimeout(()=>{ document.getElementById('loader').classList.add('hidden'); }, 500);
+});
+
+/* ============================= THEME TOGGLE ============================= */
+const themeToggle = document.getElementById('themeToggle');
+themeToggle.addEventListener('click', ()=>{
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  themeToggle.innerHTML = isDark ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
+});
+
+/* ============================= MOBILE MENU ============================= */
+document.getElementById('hamburgerBtn').addEventListener('click', ()=>{
+  const links = document.querySelector('.nav-links');
+  const isShown = links.style.display === 'flex';
+  links.style.cssText = isShown ? '' : 'display:flex; position:absolute; top:64px; left:0; right:0; background:var(--navy); flex-direction:column; padding:10px; z-index:999;';
+});
+
+/* ============================= TOAST ============================= */
+function showToast(msg, type='ok'){
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type==='error' ? ' error':'');
+  el.innerHTML = `<i class="fa-solid ${type==='error'?'fa-circle-exclamation':'fa-circle-check'}"></i><span>${msg}</span>`;
+  c.appendChild(el);
+  setTimeout(()=>{ el.classList.add('hide'); setTimeout(()=>el.remove(),300); }, 2800);
+}
+
+/* ============================= BACK TO TOP ============================= */
+const backBtn = document.getElementById('backToTop');
+window.addEventListener('scroll', ()=>{
+  backBtn.classList.toggle('show', window.scrollY > 500);
+  document.querySelectorAll('.fade-up').forEach(el=>{
+    const r = el.getBoundingClientRect();
+    if(r.top < window.innerHeight - 80) el.classList.add('in');
+  });
+});
+backBtn.addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'}));
+
+/* ============================= RENDER: PLACES, DEPTS, GALLERY, CONTACTS, EVENTS ============================= */
+const PLACE_IDS = ['library','auditorium','sports','boysh','labs','cafeteria'];
+function renderPlaces(){
+  const grid = document.getElementById('placesGrid');
+  grid.innerHTML = PLACE_IDS.map(id=>{
+    const l = locById[id];
+    return `<div class="place-card" onclick="viewOnMap('${l.id}')">
+      <div class="place-img">${buildingSVG(l.illo, l.color)}</div>
+      <div class="place-info"><h4>${l.name.split(' ').length>3? l.building : l.name}</h4><span>${l.timing}</span></div>
+    </div>`;
+  }).join('');
+}
+
+const DEPT_IDS = ['cse','aiml','ece','it','civil','mech'];
+function renderDepartments(filter='all'){
+  const grid = document.getElementById('deptGrid');
+  const list = DEPT_IDS.map(id=>locById[id]).filter(l=> filter==='all' || l.group===filter);
+  if(!list.length){ grid.innerHTML = `<div class="no-results"><i class="fa-solid fa-folder-open"></i><p>No departments match this filter.</p></div>`; return; }
+  grid.innerHTML = list.map(l=>`
+    <div class="dept-card">
+      <div class="dept-img">${buildingSVG(l.illo, l.color)}<span class="dept-tag">${l.building}</span></div>
+      <div class="dept-body">
+        <h3>${l.name}</h3>
+        <p class="dept-desc">${l.desc}</p>
+        <div class="dept-meta">
+          <span><i class="fa-solid fa-layer-group"></i> ${l.floor}</span>
+          <span><i class="fa-regular fa-clock"></i> ${l.timing}</span>
+        </div>
+        <div class="dept-footer">
+          <button class="btn btn-primary btn-sm btn-block" onclick="viewOnMap('${l.id}')"><i class="fa-solid fa-map-pin"></i> View on Map</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+document.getElementById('deptToolbar').addEventListener('click', e=>{
+  const chip = e.target.closest('.filter-chip'); if(!chip) return;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  renderDepartments(chip.dataset.filter);
+});
+
+function renderGallery(){
+  const track = document.getElementById('galleryTrack');
+  track.innerHTML = GALLERY.map(g=>{
+    const loc = locById[g.id];
+    const kind = loc ? loc.illo : g.id;
+    const color = loc ? loc.color : '#16A34A';
+    return `<div class="gallery-item">${buildingSVG(kind,color)}<div class="gallery-cap">${g.label}</div></div>`;
+  }).join('');
+}
+document.getElementById('galPrev').addEventListener('click', ()=> document.getElementById('galleryTrack').scrollBy({left:-280, behavior:'smooth'}));
+document.getElementById('galNext').addEventListener('click', ()=> document.getElementById('galleryTrack').scrollBy({left:280, behavior:'smooth'}));
+
+function renderContacts(){
+  document.getElementById('contactList').innerHTML = CONTACTS.map(c=>`
+    <div class="contact-row">
+      <div class="contact-avatar"><i class="fa-solid fa-user-tie"></i></div>
+      <div class="contact-info">
+        <div class="cname">${c.name}</div>
+        <div class="crole">${c.role}</div>
+      </div>
+      <div class="contact-links">
+        <a class="icon-btn" href="tel:${c.phone.replace(/\s/g,'')}" title="${c.phone}"><i class="fa-solid fa-phone"></i></a>
+        <a class="icon-btn" href="mailto:${c.email}" title="${c.email}"><i class="fa-solid fa-envelope"></i></a>
+      </div>
+    </div>`).join('');
+}
+
+function renderEvents(){
+  document.getElementById('eventList').innerHTML = EVENTS.map(e=>`
+    <div class="event-item">
+      <div class="event-date">${e.d}<small>${e.m}</small></div>
+      <div><div class="event-title">${e.title}</div><div class="event-meta">${e.meta}</div></div>
+    </div>`).join('');
+}
+
+/* ============================= STATS COUNTER ============================= */
+let statsAnimated = false;
+function animateStats(){
+  if(statsAnimated) return;
+  const bar = document.getElementById('statsBar');
+  const r = bar.getBoundingClientRect();
+  if(r.top > window.innerHeight - 100) return;
+  statsAnimated = true;
+  document.querySelectorAll('.stat-num').forEach(el=>{
+    const target = parseInt(el.dataset.target);
+    const suffix = el.dataset.suffix || '';
+    let cur = 0; const step = Math.max(1, Math.ceil(target/60));
+    const t = setInterval(()=>{
+      cur += step;
+      if(cur >= target){ cur = target; clearInterval(t); }
+      el.textContent = cur.toLocaleString() + suffix;
+    }, 25);
+  });
+}
+window.addEventListener('scroll', animateStats);
+
