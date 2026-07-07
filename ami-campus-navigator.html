@@ -1236,16 +1236,47 @@ function addChatMsg(text, who){
 function aiRespond(q){
   const lower = q.toLowerCase();
   const found = LOCATIONS.find(l=> lower.includes(l.name.toLowerCase()) || lower.includes(l.id) || (l.name.toLowerCase().split(' ').some(w=> w.length>3 && lower.includes(w))));
+
   if(lower.includes('cafeteria') || lower.includes('food')){
     const l = locById['cafeteria'];
     addChatMsg(`${l.name} is at ${l.building}, open ${l.timing}. I'll show it on the map.`,'bot');
-    viewOnMap('cafeteria'); return;
+    viewOnMap('cafeteria');
+    return;
   }
+
+  if(lower.includes('parking')){
+    const l = locById['parking'];
+    addChatMsg(`${l.name} is located near ${l.building} and is available 24/7. I'll show it on the map.`,'bot');
+    viewOnMap('parking');
+    return;
+  }
+
+  if(lower.includes('medical') || lower.includes('hospital')){
+    const l = locById['medical'];
+    addChatMsg(`${l.name} is open 24/7 for emergencies and healthcare services. I'll show it on the map.`,'bot');
+    viewOnMap('medical');
+    return;
+  }
+
+  if(lower.includes('bus')){
+    addChatMsg("Campus buses operate throughout the day. Please refer to the Bus Timing section for the latest schedule.",'bot');
+    return;
+  }
+
+  if(lower.includes('sports')){
+    const l = locById['sports'];
+    addChatMsg(`${l.name} includes indoor and outdoor sports facilities. I'll show it on the map.`,'bot');
+    viewOnMap('sports');
+    return;
+  }
+
   if(found){
     addChatMsg(`${found.name} is located at ${found.building} (Floor: ${found.floor}), open ${found.timing}. Showing it on the map now.`, 'bot');
-    viewOnMap(found.id); return;
+    viewOnMap(found.id);
+    return;
   }
-  addChatMsg("I couldn't find that exact place. Try asking about CSE, Library, Hostel, Auditorium, Cafeteria, or Sports Complex.", 'bot');
+
+  addChatMsg("I couldn't find that exact place. Try asking about CSE, Library, Hostel, Auditorium, Cafeteria, Sports Complex, Parking, Medical Centre, or Bus Stop.", 'bot');
 }
 document.getElementById('chatSend').addEventListener('click', ()=>{
   const input = document.getElementById('chatInput');
